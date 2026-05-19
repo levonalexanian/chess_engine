@@ -71,6 +71,16 @@ target_link_libraries(make_move_tests
 
 gtest_discover_tests(make_move_tests)
 
+add_executable(attacks_tests attacks_test.cpp)
+target_link_libraries(attacks_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(attacks_tests)
+
 add_executable(uci_tests uci_test.cpp)
 target_link_libraries(uci_tests
     PRIVATE
