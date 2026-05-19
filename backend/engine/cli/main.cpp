@@ -1,12 +1,12 @@
 #include <chrono>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
 
-#include <fmt/core.h>
-
 #include "chess_engine/engine.hpp"
 #include "chess_engine/move.hpp"
+#include "chess_engine/uci.hpp"
 
 namespace {
 
@@ -27,6 +27,6 @@ public:
 
 int main() {
     std::unique_ptr<chess_engine::Engine> engine = std::make_unique<PlaceholderEngine>();
-    fmt::print("{}\n", engine->name());
+    chess_engine::UciLoop::run(*engine, std::cin, std::cout);
     return 0;
 }

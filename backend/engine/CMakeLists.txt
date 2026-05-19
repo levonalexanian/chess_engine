@@ -2,6 +2,7 @@ add_library(chess_engine STATIC
     src/board.cpp
     src/move.cpp
     src/position.cpp
+    src/uci.cpp
 )
 
 target_include_directories(chess_engine
