@@ -51,6 +51,16 @@ target_link_libraries(position_tests
 
 gtest_discover_tests(position_tests)
 
+add_executable(zobrist_tests zobrist_test.cpp)
+target_link_libraries(zobrist_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(zobrist_tests)
+
 add_executable(uci_tests uci_test.cpp)
 target_link_libraries(uci_tests
     PRIVATE

@@ -43,6 +43,9 @@ public:
     std::optional<int> en_passant_square() const { return en_passant_square_; }
     int halfmove_clock() const { return halfmove_clock_; }
     int fullmove_number() const { return fullmove_number_; }
+    std::uint64_t zobrist_hash() const { return zobrist_hash_; }
+
+    std::uint64_t compute_zobrist_hash() const;
 
     std::string to_fen() const;
     std::string fen() const;
@@ -57,6 +60,7 @@ private:
     std::optional<int> en_passant_square_{};
     int halfmove_clock_{0};
     int fullmove_number_{1};
+    std::uint64_t zobrist_hash_{0};
 };
 
 }  // namespace chess_engine

@@ -10,6 +10,8 @@
 #include <string_view>
 #include <vector>
 
+#include "chess_engine/zobrist.hpp"
+
 namespace chess_engine {
 
 namespace {
@@ -213,7 +215,28 @@ std::optional<Position> Position::from_fen(std::string_view fen) {
         pos.fullmove_number_ = 1;
     }
 
+    pos.zobrist_hash_ = pos.compute_zobrist_hash();
     return pos;
+}
+
+std::uint64_t Position::compute_zobrist_hash() const {
+    const auto& z = zobrist::table();
+    std::uint64_t h = 0;
+    for (int sq = 0; sq < kNumSquares; ++sq) {
+        auto piece = board_.piece_at(sq);
+        if (piece.has_value()) {
+            h ^= z.piece_square[*piece][sq];
+        }
+    }
+    h ^= z.castling[castling_.mask & 0xF];
+    if (en_passant_square_.has_value()) {
+        const int file = *en_passant_square_ & 7;
+        h ^= z.en_passant_file[file];
+    }
+    if (side_to_move_ == Color::Black) {
+        h ^= z.black_to_move;
+    }
+    return h;
 }
 
 std::string Position::to_fen() const {
