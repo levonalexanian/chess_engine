@@ -87,4 +87,39 @@ constexpr Bitboard knight_attacks(int square) { return kKnightAttacks[square]; }
 constexpr Bitboard king_attacks(int square) { return kKingAttacks[square]; }
 constexpr Bitboard pawn_attacks(Color c, int square) { return kPawnAttacks[c][square]; }
 
+inline constexpr std::array<int, 4> kBishopDeltas = {-9, -7, 7, 9};
+inline constexpr std::array<int, 4> kRookDeltas = {-8, -1, 1, 8};
+
+template <std::size_t N>
+constexpr Bitboard sliding_attacks(int square, Bitboard occupancy,
+                                   const std::array<int, N>& deltas) {
+    Bitboard attacks = 0;
+    for (int d : deltas) {
+        int prev = square;
+        int next = square + d;
+        while (next >= 0 && next < kNumSquares) {
+            const int file_distance = (next & 7) - (prev & 7);
+            if (file_distance < -1 || file_distance > 1) break;
+            const Bitboard target = Bitboard{1} << next;
+            attacks |= target;
+            if (occupancy & target) break;
+            prev = next;
+            next += d;
+        }
+    }
+    return attacks;
+}
+
+constexpr Bitboard bishop_attacks(int square, Bitboard occupancy) {
+    return sliding_attacks(square, occupancy, kBishopDeltas);
+}
+
+constexpr Bitboard rook_attacks(int square, Bitboard occupancy) {
+    return sliding_attacks(square, occupancy, kRookDeltas);
+}
+
+constexpr Bitboard queen_attacks(int square, Bitboard occupancy) {
+    return bishop_attacks(square, occupancy) | rook_attacks(square, occupancy);
+}
+
 }  // namespace chess_engine::attacks

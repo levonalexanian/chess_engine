@@ -111,3 +111,74 @@ TEST(PawnAttacks, EighthRankWhiteHasNone) {
 TEST(PawnAttacks, FirstRankBlackHasNone) {
     EXPECT_EQ(ca::pawn_attacks(ce::Color::Black, square_of("e1")), 0u);
 }
+
+TEST(BishopAttacks, CenterEmptyBoardReachesFourDiagonals) {
+    const auto attacks = ca::bishop_attacks(square_of("d4"), 0);
+    const auto expected = bits({
+        "a1", "b2", "c3", "e5", "f6", "g7", "h8",
+        "a7", "b6", "c5", "e3", "f2", "g1",
+    });
+    EXPECT_EQ(attacks, expected);
+}
+
+TEST(BishopAttacks, BlockerStopsRayAndIsIncluded) {
+    const auto occupancy = bits({"f6"});
+    const auto attacks = ca::bishop_attacks(square_of("d4"), occupancy);
+    // NE ray stops at f6 (inclusive). Other rays go to the edge.
+    const auto expected = bits({
+        "e5", "f6",
+        "c5", "b6", "a7",
+        "c3", "b2", "a1",
+        "e3", "f2", "g1",
+    });
+    EXPECT_EQ(attacks, expected);
+}
+
+TEST(BishopAttacks, NoWrapAroundFromA1) {
+    const auto attacks = ca::bishop_attacks(square_of("a1"), 0);
+    // a1 has only one diagonal direction (NE).
+    const auto expected = bits({"b2", "c3", "d4", "e5", "f6", "g7", "h8"});
+    EXPECT_EQ(attacks, expected);
+}
+
+TEST(BishopAttacks, NoWrapAroundFromH1) {
+    const auto attacks = ca::bishop_attacks(square_of("h1"), 0);
+    // h1 only has one diagonal direction (NW).
+    const auto expected = bits({"g2", "f3", "e4", "d5", "c6", "b7", "a8"});
+    EXPECT_EQ(attacks, expected);
+}
+
+TEST(RookAttacks, CenterEmptyBoardCoversFileAndRank) {
+    const auto attacks = ca::rook_attacks(square_of("d4"), 0);
+    const auto expected = bits({
+        "a4", "b4", "c4", "e4", "f4", "g4", "h4",
+        "d1", "d2", "d3", "d5", "d6", "d7", "d8",
+    });
+    EXPECT_EQ(attacks, expected);
+}
+
+TEST(RookAttacks, BlockerStopsRayAndIsIncluded) {
+    const auto occupancy = bits({"d6", "f4"});
+    const auto attacks = ca::rook_attacks(square_of("d4"), occupancy);
+    const auto expected = bits({
+        "d5", "d6", "e4", "f4",
+        "a4", "b4", "c4",
+        "d1", "d2", "d3",
+    });
+    EXPECT_EQ(attacks, expected);
+}
+
+TEST(RookAttacks, NoWrapAroundFromA1) {
+    const auto attacks = ca::rook_attacks(square_of("a1"), 0);
+    const auto expected = bits({
+        "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+        "a2", "a3", "a4", "a5", "a6", "a7", "a8",
+    });
+    EXPECT_EQ(attacks, expected);
+}
+
+TEST(QueenAttacks, UnionOfBishopAndRook) {
+    const auto rook = ca::rook_attacks(square_of("d4"), 0);
+    const auto bishop = ca::bishop_attacks(square_of("d4"), 0);
+    EXPECT_EQ(ca::queen_attacks(square_of("d4"), 0), rook | bishop);
+}
