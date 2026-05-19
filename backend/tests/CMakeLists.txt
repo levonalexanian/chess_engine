@@ -141,3 +141,13 @@ target_link_libraries(game_session_tests
 )
 
 gtest_discover_tests(game_session_tests)
+
+add_executable(perft_tests perft_test.cpp)
+target_link_libraries(perft_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(perft_tests)
