@@ -47,6 +47,12 @@ public:
 
     std::uint64_t compute_zobrist_hash() const;
 
+    // Apply a UCI move to the position. Does not validate legality (move
+    // generation lives on the next branch); use it for now to advance state
+    // through a known-legal move list. Returns false only when the UCI string
+    // is malformed or names an empty source square.
+    bool make_move(std::string_view uci);
+
     std::string to_fen() const;
     std::string fen() const;
 

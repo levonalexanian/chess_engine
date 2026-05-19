@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 
+#include "chess_engine/move.hpp"
 #include "chess_engine/zobrist.hpp"
 
 namespace chess_engine {
@@ -217,6 +218,178 @@ std::optional<Position> Position::from_fen(std::string_view fen) {
 
     pos.zobrist_hash_ = pos.compute_zobrist_hash();
     return pos;
+}
+
+namespace {
+
+constexpr int square_index(int file, int rank) {
+    return rank * 8 + file;
+}
+
+std::uint8_t castling_loss_for_square(int square) {
+    // Whenever a piece moves to or from a corner, that side loses the
+    // corresponding castling right (rook moved off its starting square, or
+    // captured on a corner).
+    switch (square) {
+        case 0:  return CastlingRights::WhiteQueenSide;
+        case 7:  return CastlingRights::WhiteKingSide;
+        case 56: return CastlingRights::BlackQueenSide;
+        case 63: return CastlingRights::BlackKingSide;
+        default: return 0;
+    }
+}
+
+}  // namespace
+
+bool Position::make_move(std::string_view uci) {
+    auto move = Move::from_uci(uci);
+    if (!move.has_value() || move->raw() == 0) {
+        return false;
+    }
+    const int from = move->from();
+    const int to = move->to();
+    auto moving = board_.piece_at(from);
+    if (!moving.has_value()) {
+        return false;
+    }
+
+    const auto& z = zobrist::table();
+    const Color mover = color_of(*moving);
+    const PieceType moving_type = piece_type_of(*moving);
+
+    // Undo current state contributions to the hash; we'll XOR new contributions back in.
+    zobrist_hash_ ^= z.castling[castling_.mask & 0xF];
+    if (en_passant_square_.has_value()) {
+        zobrist_hash_ ^= z.en_passant_file[*en_passant_square_ & 7];
+    }
+    if (side_to_move_ == Color::Black) {
+        zobrist_hash_ ^= z.black_to_move;
+    }
+
+    bool is_capture = false;
+    auto captured = board_.piece_at(to);
+    if (captured.has_value()) {
+        is_capture = true;
+        zobrist_hash_ ^= z.piece_square[*captured][to];
+        board_.remove_piece(to);
+    }
+
+    // Detect en-passant capture: a pawn moves diagonally onto the en-passant target.
+    bool is_en_passant_capture = false;
+    if (moving_type == PieceType::Pawn && en_passant_square_.has_value() &&
+        to == *en_passant_square_ && !is_capture) {
+        is_en_passant_capture = true;
+        const int captured_square = mover == Color::White ? to - 8 : to + 8;
+        auto ep_target = board_.piece_at(captured_square);
+        if (ep_target.has_value()) {
+            zobrist_hash_ ^= z.piece_square[*ep_target][captured_square];
+            board_.remove_piece(captured_square);
+            is_capture = true;
+        }
+    }
+
+    // Move the piece from "from" to "to" (handling promotion later).
+    zobrist_hash_ ^= z.piece_square[*moving][from];
+    board_.remove_piece(from);
+
+    Piece destination_piece = *moving;
+    bool is_promotion = false;
+    if (uci.size() == 5) {
+        is_promotion = true;
+        PieceType promo_type = PieceType::Queen;
+        switch (uci[4]) {
+            case 'q': case 'Q': promo_type = PieceType::Queen; break;
+            case 'r': case 'R': promo_type = PieceType::Rook; break;
+            case 'b': case 'B': promo_type = PieceType::Bishop; break;
+            case 'n': case 'N': promo_type = PieceType::Knight; break;
+            default: break;
+        }
+        destination_piece = make_piece(mover, promo_type);
+    }
+    board_.set_piece(to, destination_piece);
+    zobrist_hash_ ^= z.piece_square[destination_piece][to];
+
+    // Handle castling: the king has moved two squares horizontally on its home rank.
+    bool is_castling = false;
+    if (moving_type == PieceType::King) {
+        const int from_file = from & 7;
+        const int to_file = to & 7;
+        if (from_file == 4 && (to_file == 6 || to_file == 2)) {
+            is_castling = true;
+            const int rank = from >> 3;
+            int rook_from = 0;
+            int rook_to = 0;
+            if (to_file == 6) {
+                rook_from = square_index(7, rank);
+                rook_to = square_index(5, rank);
+            } else {
+                rook_from = square_index(0, rank);
+                rook_to = square_index(3, rank);
+            }
+            auto rook = board_.piece_at(rook_from);
+            if (rook.has_value()) {
+                zobrist_hash_ ^= z.piece_square[*rook][rook_from];
+                board_.remove_piece(rook_from);
+                board_.set_piece(rook_to, *rook);
+                zobrist_hash_ ^= z.piece_square[*rook][rook_to];
+            }
+        }
+    }
+
+    // Update castling rights: any king move removes both sides' rights for the mover;
+    // any rook move from a starting corner removes that right; any move/capture onto a
+    // corner removes the matching right for the side that owned it.
+    if (moving_type == PieceType::King) {
+        if (mover == Color::White) {
+            castling_.clear(CastlingRights::WhiteKingSide | CastlingRights::WhiteQueenSide);
+        } else {
+            castling_.clear(CastlingRights::BlackKingSide | CastlingRights::BlackQueenSide);
+        }
+    }
+    castling_.clear(castling_loss_for_square(from));
+    castling_.clear(castling_loss_for_square(to));
+
+    // Update en passant square: set only after a two-square pawn push.
+    std::optional<int> new_ep;
+    if (moving_type == PieceType::Pawn) {
+        const int from_rank = from >> 3;
+        const int to_rank = to >> 3;
+        if (mover == Color::White && from_rank == 1 && to_rank == 3) {
+            new_ep = from + 8;
+        } else if (mover == Color::Black && from_rank == 6 && to_rank == 4) {
+            new_ep = from - 8;
+        }
+    }
+    en_passant_square_ = new_ep;
+
+    // Halfmove clock: reset on pawn move or capture, otherwise increment.
+    if (moving_type == PieceType::Pawn || is_capture) {
+        halfmove_clock_ = 0;
+    } else {
+        halfmove_clock_ += 1;
+    }
+
+    // Fullmove number increments after black's move.
+    if (side_to_move_ == Color::Black) {
+        fullmove_number_ += 1;
+    }
+
+    // Flip side to move.
+    side_to_move_ = side_to_move_ == Color::White ? Color::Black : Color::White;
+
+    // Reapply state contributions to the hash.
+    zobrist_hash_ ^= z.castling[castling_.mask & 0xF];
+    if (en_passant_square_.has_value()) {
+        zobrist_hash_ ^= z.en_passant_file[*en_passant_square_ & 7];
+    }
+    if (side_to_move_ == Color::Black) {
+        zobrist_hash_ ^= z.black_to_move;
+    }
+
+    (void)is_castling;
+    (void)is_en_passant_capture;
+    (void)is_promotion;
+    return true;
 }
 
 std::uint64_t Position::compute_zobrist_hash() const {
