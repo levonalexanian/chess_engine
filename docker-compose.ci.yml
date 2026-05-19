@@ -4,4 +4,4 @@ services:
       - .:/home/vscode/workspace
       - ./.ci-cache/conan2:/home/vscode/.conan2
       - ./.ci-cache/node_modules:/home/vscode/workspace/frontend/node_modules
-      - ./.ci-cache/python-user-local:/home/vscode/.local
+      - ./.ci-cache/pip:/home/vscode/.cache/pip

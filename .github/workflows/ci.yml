@@ -6,10 +6,10 @@ on:
   pull_request:
 
 # All real work runs inside the dev container so CI matches local `make` invocations.
-# We override docker-compose.yml's named volumes with path-based bind mounts via
-# docker-compose.ci.yml so actions/cache can see and persist the caches.
-# The cache dirs under ./.ci-cache/ are restored before the container runs and
-# saved afterwards.
+# docker-compose.ci.yml swaps the named-volume caches from docker-compose.yml for
+# bind mounts under ./.ci-cache/ so actions/cache can see and persist them.
+# Workspace is chown'd to uid 1000 so the container's `vscode` user can write to
+# checked-out files (package-lock.json, training/chess_training.egg-info/, etc.).
 
 jobs:
   backend:
@@ -30,10 +30,10 @@ jobs:
           restore-keys: |
             conan2-${{ runner.os }}-
 
-      - name: Prepare cache directories
+      - name: Prepare workspace and cache directories
         run: |
-          mkdir -p .ci-cache/conan2 .ci-cache/node_modules .ci-cache/python-user-local
-          sudo chown -R 1000:1000 .ci-cache
+          mkdir -p .ci-cache/conan2 .ci-cache/node_modules .ci-cache/pip
+          sudo chown -R 1000:1000 . .ci-cache
 
       - name: Build dev image
         uses: docker/build-push-action@v5
@@ -79,10 +79,10 @@ jobs:
           restore-keys: |
             npm-${{ runner.os }}-
 
-      - name: Prepare cache directories
+      - name: Prepare workspace and cache directories
         run: |
-          mkdir -p .ci-cache/conan2 .ci-cache/node_modules .ci-cache/python-user-local
-          sudo chown -R 1000:1000 .ci-cache
+          mkdir -p .ci-cache/conan2 .ci-cache/node_modules .ci-cache/pip
+          sudo chown -R 1000:1000 . .ci-cache
 
       - name: Build dev image
         uses: docker/build-push-action@v5
@@ -122,15 +122,15 @@ jobs:
       - name: Restore pip cache
         uses: actions/cache@v4
         with:
-          path: .ci-cache/python-user-local
+          path: .ci-cache/pip
           key: pip-${{ runner.os }}-${{ hashFiles('training/pyproject.toml') }}
           restore-keys: |
             pip-${{ runner.os }}-
 
-      - name: Prepare cache directories
+      - name: Prepare workspace and cache directories
         run: |
-          mkdir -p .ci-cache/conan2 .ci-cache/node_modules .ci-cache/python-user-local
-          sudo chown -R 1000:1000 .ci-cache
+          mkdir -p .ci-cache/conan2 .ci-cache/node_modules .ci-cache/pip
+          sudo chown -R 1000:1000 . .ci-cache
 
       - name: Build dev image
         uses: docker/build-push-action@v5
@@ -142,12 +142,7 @@ jobs:
           cache-from: type=gha,scope=dev-image
           cache-to: type=gha,scope=dev-image,mode=max
 
-      - name: pip install training package
+      - name: pip install and pytest
         run: |
           docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
-            bash -c 'pip install --user --break-system-packages -e "training[dev]"'
-
-      - name: Pytest
-        run: |
-          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
-            bash -c 'pytest training/'
+            bash -c 'set -e; pip install --user --break-system-packages -e "training[dev]"; pytest training/'
