@@ -21,6 +21,16 @@ target_link_libraries(engine_tests
 
 gtest_discover_tests(engine_tests)
 
+add_executable(board_tests board_test.cpp)
+target_link_libraries(board_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(board_tests)
+
 add_executable(uci_tests uci_test.cpp)
 target_link_libraries(uci_tests
     PRIVATE
