@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# All real work runs inside the dev container so CI matches local `make` invocations.
+# We override docker-compose.yml's named volumes with path-based bind mounts via
+# docker-compose.ci.yml so actions/cache can see and persist the caches.
+# The cache dirs under ./.ci-cache/ are restored before the container runs and
+# saved afterwards.
+
+jobs:
+  backend:
+    name: Backend (C++ build and ctest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Restore Conan cache
+        uses: actions/cache@v4
+        with:
+          path: .ci-cache/conan2
+          key: conan2-${{ runner.os }}-${{ hashFiles('backend/conanfile.py', 'backend/CMakeLists.txt', 'backend/CMakePresets.json', 'backend/**/CMakeLists.txt') }}
+          restore-keys: |
+            conan2-${{ runner.os }}-
+
+      - name: Prepare cache directories
+        run: |
+          mkdir -p .ci-cache/conan2 .ci-cache/node_modules .ci-cache/python-user-local
+          sudo chown -R 1000:1000 .ci-cache
+
+      - name: Build dev image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .devcontainer/Dockerfile
+          tags: chess-engine-dev:local
+          load: true
+          cache-from: type=gha,scope=dev-image
+          cache-to: type=gha,scope=dev-image,mode=max
+
+      - name: Conan install
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
+            bash -c 'set -e; conan profile detect --force >/dev/null; \
+              conan install backend --output-folder=backend/build/dev --build=missing -s build_type=Release'
+
+      - name: CMake build
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
+            bash -c 'cmake --preset dev -S backend && cmake --build backend/build/dev'
+
+      - name: Run ctest
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
+            bash -c 'ctest --test-dir backend/build/dev --output-on-failure'
+
+  frontend:
+    name: Frontend (typecheck and vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Restore npm node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: .ci-cache/node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Prepare cache directories
+        run: |
+          mkdir -p .ci-cache/conan2 .ci-cache/node_modules .ci-cache/python-user-local
+          sudo chown -R 1000:1000 .ci-cache
+
+      - name: Build dev image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .devcontainer/Dockerfile
+          tags: chess-engine-dev:local
+          load: true
+          cache-from: type=gha,scope=dev-image
+          cache-to: type=gha,scope=dev-image,mode=max
+
+      - name: npm install
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
+            bash -c 'cd frontend && npm install'
+
+      - name: Typecheck
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
+            bash -c 'cd frontend && npm run typecheck'
+
+      - name: Vitest
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
+            bash -c 'cd frontend && npm run test'
+
+  training:
+    name: Training (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Restore pip cache
+        uses: actions/cache@v4
+        with:
+          path: .ci-cache/python-user-local
+          key: pip-${{ runner.os }}-${{ hashFiles('training/pyproject.toml') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      - name: Prepare cache directories
+        run: |
+          mkdir -p .ci-cache/conan2 .ci-cache/node_modules .ci-cache/python-user-local
+          sudo chown -R 1000:1000 .ci-cache
+
+      - name: Build dev image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .devcontainer/Dockerfile
+          tags: chess-engine-dev:local
+          load: true
+          cache-from: type=gha,scope=dev-image
+          cache-to: type=gha,scope=dev-image,mode=max
+
+      - name: pip install training package
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
+            bash -c 'pip install --user --break-system-packages -e "training[dev]"'
+
+      - name: Pytest
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm -T dev \
+            bash -c 'pytest training/'

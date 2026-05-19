@@ -1,5 +1,7 @@
 # chess_engine
 
+[![CI](https://github.com/levon-alexanian/chess_engine/actions/workflows/ci.yml/badge.svg)](https://github.com/levon-alexanian/chess_engine/actions/workflows/ci.yml)
+
 > **Status: work in progress.** The skeleton builds end-to-end (browser ↔ WebSocket ↔ C++ server ↔ stub engine), but no real chess logic is implemented yet — move generation, neural-net engines, and self-play training all land on future feature branches.
 
 A webhosted chess platform with three pillars: a React + Tailwind **web client** in the browser, a single-binary C++ **server and engine** (HTTP/WS server linked against our chess engine library, with ONNX Runtime for neural-network inference and UCI subprocess support for external engines like Stockfish), and a Python **training pipeline** that trains transformer policy + value models via supervised learning and AlphaZero-style self-play, exporting checkpoints to ONNX for the C++ side to consume. The interesting work happens in the learned models — we deliberately skip hand-rolled alpha-beta search.
