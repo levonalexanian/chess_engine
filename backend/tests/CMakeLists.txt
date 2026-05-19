@@ -41,6 +41,16 @@ target_link_libraries(move_tests
 
 gtest_discover_tests(move_tests)
 
+add_executable(position_tests position_test.cpp)
+target_link_libraries(position_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(position_tests)
+
 add_executable(uci_tests uci_test.cpp)
 target_link_libraries(uci_tests
     PRIVATE
