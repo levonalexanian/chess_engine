@@ -1,0 +1,6 @@
+#include <fmt/core.h>
+
+int main() {
+    fmt::print("hello\n");
+    return 0;
+}

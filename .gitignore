@@ -1,6 +1,7 @@
 # Build artifacts
 build/
 dist/
+CMakeUserPresets.json
 
 # Conan
 .conan2/

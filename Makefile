@@ -29,7 +29,7 @@ image-build:
 	$(COMPOSE) build dev
 
 install:
-	$(DEV) bash -c 'cd backend && conan install . --profile:host=default --profile:build=default --build=missing && cd ../frontend && npm install && cd ../training && pip install --user -e .'
+	$(DEV) bash -c 'set -e; conan profile detect --force >/dev/null; conan install backend --output-folder=backend/build/dev --build=missing -s build_type=Release; if [ -f frontend/package.json ]; then (cd frontend && npm install); fi; if [ -f training/pyproject.toml ]; then pip install --user -e training; fi'
 
 build:
 	$(DEV) bash -c 'cmake --preset dev -S backend && cmake --build backend/build/dev'
@@ -38,7 +38,7 @@ typecheck:
 	$(DEV) bash -c 'cd frontend && npm run typecheck'
 
 test:
-	$(DEV) bash -c 'ctest --test-dir backend/build/dev --output-on-failure && cd frontend && npm run test && cd .. && pytest training/'
+	$(DEV) bash -c 'set -e; ctest --test-dir backend/build/dev --output-on-failure; if [ -f frontend/package.json ]; then (cd frontend && npm run test); fi; if [ -f training/pyproject.toml ]; then pytest training/; fi'
 
 web:
 	$(DEV_TTY) bash -c 'cd frontend && npm run build && cd /home/vscode/workspace && ./backend/build/dev/server/chess-server'
