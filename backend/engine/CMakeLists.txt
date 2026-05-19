@@ -1,2 +1,19 @@
-# Placeholder for the chess_engine library. The real engine library target
-# lands in commit 5 ("Added engine library skeleton").
+add_library(chess_engine STATIC
+    src/board.cpp
+    src/move.cpp
+    src/position.cpp
+)
+
+target_include_directories(chess_engine
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_compile_features(chess_engine PUBLIC cxx_std_20)
+
+add_executable(engine-cli cli/main.cpp)
+target_link_libraries(engine-cli
+    PRIVATE
+        chess_engine
+        fmt::fmt
+)

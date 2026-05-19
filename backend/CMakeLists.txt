@@ -21,6 +21,3 @@ enable_testing()
 add_subdirectory(engine)
 add_subdirectory(server)
 add_subdirectory(tests)
-
-add_executable(chess_engine_hello main.cpp)
-target_link_libraries(chess_engine_hello PRIVATE fmt::fmt spdlog::spdlog)
