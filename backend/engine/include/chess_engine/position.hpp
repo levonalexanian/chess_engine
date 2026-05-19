@@ -26,6 +26,20 @@ struct CastlingRights {
     friend bool operator==(CastlingRights a, CastlingRights b) { return a.mask == b.mask; }
 };
 
+// Stack of mutable state needed to reverse a Move applied to a Position.
+// Returned by `Position::make_move(Move)` and consumed by `unmake_move`.
+struct UndoInfo {
+    Move move{};
+    std::optional<Piece> captured{};
+    int captured_square{-1};
+    CastlingRights prior_castling{};
+    std::optional<int> prior_ep_square{};
+    int prior_halfmove{0};
+    int prior_fullmove{0};
+    std::uint64_t prior_zobrist{0};
+    Color prior_side{Color::White};
+};
+
 class Position {
 public:
     struct EmptyTag {};
@@ -50,10 +64,20 @@ public:
     std::uint64_t compute_zobrist_hash() const;
 
     // Apply a UCI move to the position. Does not validate legality (move
-    // generation lives on the next branch); use it for now to advance state
-    // through a known-legal move list. Returns false only when the UCI string
-    // is malformed or names an empty source square.
+    // generation lives elsewhere); use it for known-legal move lists.
+    // Returns false only when the UCI string is malformed or names an empty
+    // source square. Delegates to make_move(Move) after inferring move flags
+    // from the current board state.
     bool make_move(std::string_view uci);
+
+    // Apply a Move object directly. The Move's flag set determines the
+    // semantics (castling / promotion / en passant). Returns an UndoInfo
+    // sufficient to fully reverse the move via unmake_move.
+    UndoInfo make_move(Move move);
+
+    // Reverse a previously-applied move using its UndoInfo. The Position must
+    // be in the state produced immediately after the matching make_move call.
+    void unmake_move(const UndoInfo& info);
 
     // Generate every pseudo-legal move for the side to move. Pseudo-legal
     // means: produced by the standard movement rules of each piece (including

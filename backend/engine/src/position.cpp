@@ -242,22 +242,64 @@ std::uint8_t castling_loss_for_square(int square) {
 }  // namespace
 
 bool Position::make_move(std::string_view uci) {
-    auto move = Move::from_uci(uci);
-    if (!move.has_value() || move->raw() == 0) {
+    auto parsed = Move::from_uci(uci);
+    if (!parsed.has_value() || parsed->raw() == 0) {
         return false;
     }
-    const int from = move->from();
-    const int to = move->to();
+    const int from = parsed->from();
+    const int to = parsed->to();
     auto moving = board_.piece_at(from);
     if (!moving.has_value()) {
         return false;
     }
-
-    const auto& z = zobrist::table();
-    const Color mover = color_of(*moving);
     const PieceType moving_type = piece_type_of(*moving);
 
-    // Undo current state contributions to the hash; we'll XOR new contributions back in.
+    // Infer flags from the board state when only the bare from/to/promotion
+    // bits are available from the UCI string. `from_uci` already encodes the
+    // promotion flag when a fifth character is present, so we only need to
+    // detect castling and en passant here.
+    Move::Flag flag = static_cast<Move::Flag>(parsed->flags());
+    Move::Promo promo = static_cast<Move::Promo>(parsed->promotion());
+    if (flag != Move::FlagPromotion) {
+        if (moving_type == PieceType::King) {
+            const int from_file = from & 7;
+            const int to_file = to & 7;
+            if (from_file == 4 && (to_file == 6 || to_file == 2)) {
+                flag = Move::FlagCastling;
+            }
+        }
+        if (flag == Move::FlagNone && moving_type == PieceType::Pawn &&
+            en_passant_square_.has_value() && to == *en_passant_square_) {
+            flag = Move::FlagEnPassant;
+        }
+    }
+
+    Move move{static_cast<std::uint8_t>(from), static_cast<std::uint8_t>(to), flag, promo};
+    make_move(move);
+    return true;
+}
+
+UndoInfo Position::make_move(Move move) {
+    UndoInfo info;
+    info.move = move;
+    info.prior_castling = castling_;
+    info.prior_ep_square = en_passant_square_;
+    info.prior_halfmove = halfmove_clock_;
+    info.prior_fullmove = fullmove_number_;
+    info.prior_zobrist = zobrist_hash_;
+    info.prior_side = side_to_move_;
+
+    const int from = move.from();
+    const int to = move.to();
+    auto moving = board_.piece_at(from);
+    // Caller guarantees `from` is occupied; if not, this is a programmer error.
+    const Piece mover_piece = *moving;
+    const Color mover = color_of(mover_piece);
+    const PieceType moving_type = piece_type_of(mover_piece);
+
+    const auto& z = zobrist::table();
+
+    // Undo current state contributions to the hash; new contributions XOR back in below.
     zobrist_hash_ ^= z.castling[castling_.mask & 0xF];
     if (en_passant_square_.has_value()) {
         zobrist_hash_ ^= z.en_passant_file[*en_passant_square_ & 7];
@@ -267,78 +309,65 @@ bool Position::make_move(std::string_view uci) {
     }
 
     bool is_capture = false;
-    auto captured = board_.piece_at(to);
-    if (captured.has_value()) {
-        is_capture = true;
-        zobrist_hash_ ^= z.piece_square[*captured][to];
-        board_.remove_piece(to);
-    }
-
-    // Detect en-passant capture: a pawn moves diagonally onto the en-passant target.
-    bool is_en_passant_capture = false;
-    if (moving_type == PieceType::Pawn && en_passant_square_.has_value() &&
-        to == *en_passant_square_ && !is_capture) {
-        is_en_passant_capture = true;
+    if (move.is_en_passant()) {
         const int captured_square = mover == Color::White ? to - 8 : to + 8;
         auto ep_target = board_.piece_at(captured_square);
         if (ep_target.has_value()) {
+            info.captured = *ep_target;
+            info.captured_square = captured_square;
             zobrist_hash_ ^= z.piece_square[*ep_target][captured_square];
             board_.remove_piece(captured_square);
             is_capture = true;
         }
+    } else {
+        auto captured = board_.piece_at(to);
+        if (captured.has_value()) {
+            info.captured = *captured;
+            info.captured_square = to;
+            zobrist_hash_ ^= z.piece_square[*captured][to];
+            board_.remove_piece(to);
+            is_capture = true;
+        }
     }
 
-    // Move the piece from "from" to "to" (handling promotion later).
-    zobrist_hash_ ^= z.piece_square[*moving][from];
+    zobrist_hash_ ^= z.piece_square[mover_piece][from];
     board_.remove_piece(from);
 
-    Piece destination_piece = *moving;
-    bool is_promotion = false;
-    if (uci.size() == 5) {
-        is_promotion = true;
+    Piece destination_piece = mover_piece;
+    if (move.is_promotion()) {
         PieceType promo_type = PieceType::Queen;
-        switch (uci[4]) {
-            case 'q': case 'Q': promo_type = PieceType::Queen; break;
-            case 'r': case 'R': promo_type = PieceType::Rook; break;
-            case 'b': case 'B': promo_type = PieceType::Bishop; break;
-            case 'n': case 'N': promo_type = PieceType::Knight; break;
-            default: break;
+        switch (move.promotion()) {
+            case Move::PromoKnight: promo_type = PieceType::Knight; break;
+            case Move::PromoBishop: promo_type = PieceType::Bishop; break;
+            case Move::PromoRook:   promo_type = PieceType::Rook;   break;
+            case Move::PromoQueen:  promo_type = PieceType::Queen;  break;
         }
         destination_piece = make_piece(mover, promo_type);
     }
     board_.set_piece(to, destination_piece);
     zobrist_hash_ ^= z.piece_square[destination_piece][to];
 
-    // Handle castling: the king has moved two squares horizontally on its home rank.
-    bool is_castling = false;
-    if (moving_type == PieceType::King) {
-        const int from_file = from & 7;
+    if (move.is_castling()) {
+        const int rank = from >> 3;
         const int to_file = to & 7;
-        if (from_file == 4 && (to_file == 6 || to_file == 2)) {
-            is_castling = true;
-            const int rank = from >> 3;
-            int rook_from = 0;
-            int rook_to = 0;
-            if (to_file == 6) {
-                rook_from = square_index(7, rank);
-                rook_to = square_index(5, rank);
-            } else {
-                rook_from = square_index(0, rank);
-                rook_to = square_index(3, rank);
-            }
-            auto rook = board_.piece_at(rook_from);
-            if (rook.has_value()) {
-                zobrist_hash_ ^= z.piece_square[*rook][rook_from];
-                board_.remove_piece(rook_from);
-                board_.set_piece(rook_to, *rook);
-                zobrist_hash_ ^= z.piece_square[*rook][rook_to];
-            }
+        int rook_from = 0;
+        int rook_to = 0;
+        if (to_file == 6) {
+            rook_from = square_index(7, rank);
+            rook_to = square_index(5, rank);
+        } else {
+            rook_from = square_index(0, rank);
+            rook_to = square_index(3, rank);
+        }
+        auto rook = board_.piece_at(rook_from);
+        if (rook.has_value()) {
+            zobrist_hash_ ^= z.piece_square[*rook][rook_from];
+            board_.remove_piece(rook_from);
+            board_.set_piece(rook_to, *rook);
+            zobrist_hash_ ^= z.piece_square[*rook][rook_to];
         }
     }
 
-    // Update castling rights: any king move removes both sides' rights for the mover;
-    // any rook move from a starting corner removes that right; any move/capture onto a
-    // corner removes the matching right for the side that owned it.
     if (moving_type == PieceType::King) {
         if (mover == Color::White) {
             castling_.clear(CastlingRights::WhiteKingSide | CastlingRights::WhiteQueenSide);
@@ -349,7 +378,6 @@ bool Position::make_move(std::string_view uci) {
     castling_.clear(castling_loss_for_square(from));
     castling_.clear(castling_loss_for_square(to));
 
-    // Update en passant square: set only after a two-square pawn push.
     std::optional<int> new_ep;
     if (moving_type == PieceType::Pawn) {
         const int from_rank = from >> 3;
@@ -362,22 +390,17 @@ bool Position::make_move(std::string_view uci) {
     }
     en_passant_square_ = new_ep;
 
-    // Halfmove clock: reset on pawn move or capture, otherwise increment.
     if (moving_type == PieceType::Pawn || is_capture) {
         halfmove_clock_ = 0;
     } else {
         halfmove_clock_ += 1;
     }
 
-    // Fullmove number increments after black's move.
     if (side_to_move_ == Color::Black) {
         fullmove_number_ += 1;
     }
-
-    // Flip side to move.
     side_to_move_ = side_to_move_ == Color::White ? Color::Black : Color::White;
 
-    // Reapply state contributions to the hash.
     zobrist_hash_ ^= z.castling[castling_.mask & 0xF];
     if (en_passant_square_.has_value()) {
         zobrist_hash_ ^= z.en_passant_file[*en_passant_square_ & 7];
@@ -386,10 +409,61 @@ bool Position::make_move(std::string_view uci) {
         zobrist_hash_ ^= z.black_to_move;
     }
 
-    (void)is_castling;
-    (void)is_en_passant_capture;
-    (void)is_promotion;
-    return true;
+    return info;
+}
+
+void Position::unmake_move(const UndoInfo& info) {
+    const Move move = info.move;
+    const int from = move.from();
+    const int to = move.to();
+
+    // Flip side back; the piece now on `to` belongs to the side that moved.
+    side_to_move_ = info.prior_side;
+    fullmove_number_ = info.prior_fullmove;
+    halfmove_clock_ = info.prior_halfmove;
+    castling_ = info.prior_castling;
+    en_passant_square_ = info.prior_ep_square;
+    zobrist_hash_ = info.prior_zobrist;
+
+    // Determine the piece sitting on `to`. For promotions this is the promoted
+    // piece; we need to replace it with a pawn of the moving side.
+    auto on_to = board_.piece_at(to);
+    if (!on_to.has_value()) {
+        return;  // shouldn't happen for a well-formed UndoInfo
+    }
+    const Color mover = info.prior_side;
+    Piece moving_back;
+    if (move.is_promotion()) {
+        moving_back = make_piece(mover, PieceType::Pawn);
+    } else {
+        moving_back = *on_to;
+    }
+
+    board_.remove_piece(to);
+    board_.set_piece(from, moving_back);
+
+    if (info.captured.has_value()) {
+        board_.set_piece(info.captured_square, *info.captured);
+    }
+
+    if (move.is_castling()) {
+        const int rank = from >> 3;
+        const int to_file = to & 7;
+        int rook_from = 0;
+        int rook_to = 0;
+        if (to_file == 6) {
+            rook_from = square_index(7, rank);
+            rook_to = square_index(5, rank);
+        } else {
+            rook_from = square_index(0, rank);
+            rook_to = square_index(3, rank);
+        }
+        auto rook = board_.piece_at(rook_to);
+        if (rook.has_value()) {
+            board_.remove_piece(rook_to);
+            board_.set_piece(rook_from, *rook);
+        }
+    }
 }
 
 std::uint64_t Position::compute_zobrist_hash() const {
