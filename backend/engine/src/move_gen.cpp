@@ -237,11 +237,99 @@ void generate_piece_moves(const Board& board, Color stm, std::vector<Move>& out)
 
 }  // namespace
 
+namespace {
+
+bool square_attacked(const Board& board, int square, Color attacker) {
+    const Bitboard all = board.occupancy();
+    // Pawn attackers: invert the pawn-attack table — a square is attacked by a
+    // pawn of `attacker` iff the OTHER colour's pawn-attack map from `square`
+    // intersects `attacker`'s pawns.
+    const Color victim = attacker == Color::White ? Color::Black : Color::White;
+    const Bitboard pawn_attackers =
+        attacks::pawn_attacks(victim, square) &
+        board.pieces(make_piece(attacker, PieceType::Pawn));
+    if (pawn_attackers) return true;
+    if (attacks::knight_attacks(square) & board.pieces(make_piece(attacker, PieceType::Knight))) {
+        return true;
+    }
+    if (attacks::king_attacks(square) & board.pieces(make_piece(attacker, PieceType::King))) {
+        return true;
+    }
+    const Bitboard bishops_queens = board.pieces(make_piece(attacker, PieceType::Bishop)) |
+                                     board.pieces(make_piece(attacker, PieceType::Queen));
+    if (attacks::bishop_attacks(square, all) & bishops_queens) {
+        return true;
+    }
+    const Bitboard rooks_queens = board.pieces(make_piece(attacker, PieceType::Rook)) |
+                                   board.pieces(make_piece(attacker, PieceType::Queen));
+    if (attacks::rook_attacks(square, all) & rooks_queens) {
+        return true;
+    }
+    return false;
+}
+
+void generate_castling(const Position& pos, std::vector<Move>& out) {
+    const Color stm = pos.side_to_move();
+    const Color opp = stm == Color::White ? Color::Black : Color::White;
+    const auto castling = pos.castling();
+    const Bitboard all = pos.board().occupancy();
+    const Board& board = pos.board();
+
+    if (stm == Color::White) {
+        // The king must currently be on e1 and not in check.
+        if (square_attacked(board, 4, opp)) return;
+        if (castling.has(CastlingRights::WhiteKingSide)) {
+            // f1, g1 empty; f1 not attacked (g1 will be checked by legality filter).
+            constexpr Bitboard between = (Bitboard{1} << 5) | (Bitboard{1} << 6);
+            if ((all & between) == 0 && !square_attacked(board, 5, opp) &&
+                !square_attacked(board, 6, opp)) {
+                out.emplace_back(static_cast<std::uint8_t>(4), static_cast<std::uint8_t>(6),
+                                 Move::FlagCastling);
+            }
+        }
+        if (castling.has(CastlingRights::WhiteQueenSide)) {
+            // b1, c1, d1 empty; c1, d1 not attacked (b1 may be attacked — only the
+            // squares the king moves through matter).
+            constexpr Bitboard between = (Bitboard{1} << 1) | (Bitboard{1} << 2) | (Bitboard{1} << 3);
+            if ((all & between) == 0 && !square_attacked(board, 2, opp) &&
+                !square_attacked(board, 3, opp)) {
+                out.emplace_back(static_cast<std::uint8_t>(4), static_cast<std::uint8_t>(2),
+                                 Move::FlagCastling);
+            }
+        }
+    } else {
+        if (square_attacked(board, 60, opp)) return;
+        if (castling.has(CastlingRights::BlackKingSide)) {
+            constexpr Bitboard between = (Bitboard{1} << 61) | (Bitboard{1} << 62);
+            if ((all & between) == 0 && !square_attacked(board, 61, opp) &&
+                !square_attacked(board, 62, opp)) {
+                out.emplace_back(static_cast<std::uint8_t>(60), static_cast<std::uint8_t>(62),
+                                 Move::FlagCastling);
+            }
+        }
+        if (castling.has(CastlingRights::BlackQueenSide)) {
+            constexpr Bitboard between = (Bitboard{1} << 57) | (Bitboard{1} << 58) | (Bitboard{1} << 59);
+            if ((all & between) == 0 && !square_attacked(board, 58, opp) &&
+                !square_attacked(board, 59, opp)) {
+                out.emplace_back(static_cast<std::uint8_t>(60), static_cast<std::uint8_t>(58),
+                                 Move::FlagCastling);
+            }
+        }
+    }
+}
+
+}  // namespace
+
+bool Position::is_square_attacked(int square, Color attacker) const {
+    return square_attacked(board_, square, attacker);
+}
+
 std::vector<Move> Position::generate_pseudo_legal_moves() const {
     std::vector<Move> out;
     out.reserve(64);
     generate_pawn_moves(board_, side_to_move_, en_passant_square_, out);
     generate_piece_moves(board_, side_to_move_, out);
+    generate_castling(*this, out);
     return out;
 }
 

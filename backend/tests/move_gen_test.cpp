@@ -151,3 +151,73 @@ TEST(PseudoLegal, PawnCapturePromotion) {
     EXPECT_TRUE(uci.contains("a7b8q"));
     EXPECT_TRUE(uci.contains("a7b8n"));
 }
+
+TEST(Castling, WhiteBothSidesAvailableWhenClear) {
+    auto pos = pos_from("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+    auto uci = uci_set(pos.generate_pseudo_legal_moves());
+    EXPECT_TRUE(uci.contains("e1g1"));
+    EXPECT_TRUE(uci.contains("e1c1"));
+}
+
+TEST(Castling, BlackBothSidesAvailableWhenClear) {
+    auto pos = pos_from("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+    auto uci = uci_set(pos.generate_pseudo_legal_moves());
+    EXPECT_TRUE(uci.contains("e8g8"));
+    EXPECT_TRUE(uci.contains("e8c8"));
+}
+
+TEST(Castling, NoRightsMeansNoCastlingMoves) {
+    auto pos = pos_from("r3k2r/8/8/8/8/8/8/R3K2R w - - 0 1");
+    auto uci = uci_set(pos.generate_pseudo_legal_moves());
+    EXPECT_FALSE(uci.contains("e1g1"));
+    EXPECT_FALSE(uci.contains("e1c1"));
+}
+
+TEST(Castling, BlockedPathSuppressesMove) {
+    // f1 occupied by white knight blocks kingside.
+    auto pos = pos_from("r3k2r/8/8/8/8/8/8/R3KN1R w KQkq - 0 1");
+    auto uci = uci_set(pos.generate_pseudo_legal_moves());
+    EXPECT_FALSE(uci.contains("e1g1"));
+    EXPECT_TRUE(uci.contains("e1c1"));
+}
+
+TEST(Castling, KingInCheckSuppressesAllCastling) {
+    // Black rook on e2 puts white king in check.
+    auto pos = pos_from("4k3/8/8/8/8/8/4r3/R3K2R w KQ - 0 1");
+    auto uci = uci_set(pos.generate_pseudo_legal_moves());
+    EXPECT_FALSE(uci.contains("e1g1"));
+    EXPECT_FALSE(uci.contains("e1c1"));
+}
+
+TEST(Castling, KingTransitSquareUnderAttackSuppresses) {
+    // Black rook on f2 attacks f1 — king-side transit attacked.
+    auto pos = pos_from("4k3/8/8/8/8/8/5r2/R3K2R w KQ - 0 1");
+    auto uci = uci_set(pos.generate_pseudo_legal_moves());
+    EXPECT_FALSE(uci.contains("e1g1"));
+    EXPECT_TRUE(uci.contains("e1c1"));
+}
+
+TEST(Castling, QueensideAttackedB1AllowedB1NotKingTransit) {
+    // Black rook on b2 attacks b1 — but b1 is NOT a king-transit square; only c1 and d1 are.
+    auto pos = pos_from("4k3/8/8/8/8/8/1r6/R3K2R w KQ - 0 1");
+    auto uci = uci_set(pos.generate_pseudo_legal_moves());
+    EXPECT_TRUE(uci.contains("e1c1"));
+}
+
+TEST(Castling, FlagSetOnCastlingMove) {
+    auto pos = pos_from("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+    auto moves = pos.generate_pseudo_legal_moves();
+    auto it = std::find_if(moves.begin(), moves.end(), [](const ce::Move& m) {
+        return m.to_uci() == "e1g1";
+    });
+    ASSERT_NE(it, moves.end());
+    EXPECT_TRUE(it->is_castling());
+}
+
+TEST(AttackedBy, BasicSliderAndKnight) {
+    auto pos = pos_from("8/8/8/8/3k4/8/8/4R2K w - - 0 1");
+    // White rook on e1 attacks e-file and rank 1.
+    EXPECT_TRUE(pos.is_square_attacked(/*e4*/ 28, ce::Color::White));
+    // h1 king attacks g1/g2/h2 etc; not e4.
+    EXPECT_FALSE(pos.is_square_attacked(/*a8*/ 56, ce::Color::White));
+}
