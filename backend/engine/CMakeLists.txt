@@ -21,3 +21,5 @@ target_link_libraries(engine-cli
         chess_engine
         fmt::fmt
 )
+
+add_subdirectory(bench)
