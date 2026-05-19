@@ -10,6 +10,7 @@ class ChessEngineBackend(ConanFile):
     def requirements(self):
         self.requires("fmt/10.2.1")
         self.requires("spdlog/1.13.0")
+        self.requires("crowcpp-crow/1.2.0")
 
     def build_requirements(self):
         self.test_requires("gtest/1.14.0")

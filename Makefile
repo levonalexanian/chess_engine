@@ -41,7 +41,7 @@ test:
 	$(DEV) bash -c 'set -e; ctest --test-dir backend/build/dev --output-on-failure; if [ -f frontend/package.json ]; then (cd frontend && npm run test); fi; if [ -f training/pyproject.toml ]; then pytest training/; fi'
 
 web:
-	$(DEV_TTY) bash -c 'cd frontend && npm run build && cd /home/vscode/workspace && ./backend/build/dev/server/chess-server'
+	$(DEV_TTY) bash -c 'if [ -f frontend/package.json ]; then (cd frontend && npm run build); else echo "frontend not present yet; serving stub page"; fi; ./backend/build/dev/bin/chess-server'
 
 train:
 	$(DEV) bash -c 'python training/scripts/train.py $(TRAIN_ARGS)'
