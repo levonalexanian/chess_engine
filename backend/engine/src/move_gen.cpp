@@ -324,6 +324,31 @@ bool Position::is_square_attacked(int square, Color attacker) const {
     return square_attacked(board_, square, attacker);
 }
 
+std::vector<Move> Position::generate_legal_moves() const {
+    auto pseudo = generate_pseudo_legal_moves();
+    std::vector<Move> legal;
+    legal.reserve(pseudo.size());
+    Position scratch = *this;
+    for (const auto& m : pseudo) {
+        const Color mover = scratch.side_to_move();
+        auto undo = scratch.make_move(m);
+        // After make_move, side_to_move flipped; we check that mover's king
+        // is not attacked by the new side to move.
+        const Color opponent = scratch.side_to_move();
+        Bitboard king_bb = mover == Color::White
+                               ? scratch.board().pieces(Piece::WhiteKing)
+                               : scratch.board().pieces(Piece::BlackKing);
+        if (king_bb != 0) {
+            const int king_sq = std::countr_zero(king_bb);
+            if (!scratch.is_square_attacked(king_sq, opponent)) {
+                legal.push_back(m);
+            }
+        }
+        scratch.unmake_move(undo);
+    }
+    return legal;
+}
+
 std::vector<Move> Position::generate_pseudo_legal_moves() const {
     std::vector<Move> out;
     out.reserve(64);

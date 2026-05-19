@@ -86,6 +86,10 @@ public:
     // the filtered list.
     std::vector<Move> generate_pseudo_legal_moves() const;
 
+    // Generate every legal move for the side to move: pseudo-legal filtered
+    // so the moving side's king is not left in check after the move.
+    std::vector<Move> generate_legal_moves() const;
+
     // True iff `square` is attacked by any piece of `attacker` color in the
     // current position. Used by the castling generator and the legality filter.
     bool is_square_attacked(int square, Color attacker) const;

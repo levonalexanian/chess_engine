@@ -101,6 +101,16 @@ target_link_libraries(unmake_tests
 
 gtest_discover_tests(unmake_tests)
 
+add_executable(legal_moves_tests legal_moves_test.cpp)
+target_link_libraries(legal_moves_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(legal_moves_tests)
+
 add_executable(uci_tests uci_test.cpp)
 target_link_libraries(uci_tests
     PRIVATE
