@@ -1,0 +1,21 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    image: chess-engine-dev:local
+    working_dir: /home/vscode/workspace
+    volumes:
+      - .:/home/vscode/workspace
+      - conan2-cache:/home/vscode/.conan2
+      - frontend-node-modules:/home/vscode/workspace/frontend/node_modules
+    environment:
+      - CHESS_ENGINE_REPO_ROOT=/home/vscode/workspace
+    ports:
+      - "8080:8080"
+      - "5173:5173"
+    init: true
+
+volumes:
+  conan2-cache:
+  frontend-node-modules:
