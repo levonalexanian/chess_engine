@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <charconv>
 #include <chrono>
+#include <iomanip>
 #include <istream>
 #include <ostream>
 #include <sstream>
@@ -10,8 +11,10 @@
 #include <string_view>
 #include <vector>
 
+#include "chess_engine/board.hpp"
 #include "chess_engine/engine.hpp"
 #include "chess_engine/move.hpp"
+#include "chess_engine/position.hpp"
 
 namespace chess_engine {
 
@@ -157,6 +160,55 @@ std::chrono::milliseconds time_budget_for(const UciCmdGo& go) {
     return std::chrono::milliseconds{1000};
 }
 
+char render_piece(Piece p) {
+    static constexpr char kChars[] = "PNBRQKpnbrqk";
+    return kChars[p];
+}
+
+std::string render_position(const Position& pos) {
+    std::ostringstream out;
+    for (int rank = 7; rank >= 0; --rank) {
+        out << (rank + 1) << ' ';
+        for (int file = 0; file < 8; ++file) {
+            const int sq = rank * 8 + file;
+            auto piece = pos.board().piece_at(sq);
+            out << (piece.has_value() ? render_piece(*piece) : '.');
+            if (file < 7) {
+                out << ' ';
+            }
+        }
+        out << '\n';
+    }
+    out << "  a b c d e f g h\n";
+
+    out << "Side to move: " << (pos.white_to_move() ? "white" : "black") << '\n';
+    out << "Castling: ";
+    const auto castling = pos.castling();
+    if (castling.mask == 0) {
+        out << '-';
+    } else {
+        if (castling.has(CastlingRights::WhiteKingSide)) out << 'K';
+        if (castling.has(CastlingRights::WhiteQueenSide)) out << 'Q';
+        if (castling.has(CastlingRights::BlackKingSide)) out << 'k';
+        if (castling.has(CastlingRights::BlackQueenSide)) out << 'q';
+    }
+    out << '\n';
+    out << "En passant: ";
+    if (pos.en_passant_square().has_value()) {
+        const int sq = *pos.en_passant_square();
+        out << static_cast<char>('a' + (sq & 7));
+        out << static_cast<char>('1' + (sq >> 3));
+    } else {
+        out << '-';
+    }
+    out << '\n';
+    out << "Halfmove clock: " << pos.halfmove_clock() << '\n';
+    out << "Fullmove number: " << pos.fullmove_number() << '\n';
+    out << "Zobrist hash: 0x" << std::hex << std::setw(16) << std::setfill('0')
+        << pos.zobrist_hash() << std::dec << '\n';
+    return out.str();
+}
+
 }  // namespace
 
 std::string starting_fen() {
@@ -187,11 +239,15 @@ std::optional<UciCommand> parse_command(std::string_view line) {
     if (head == "go") {
         return parse_go(tokens);
     }
+    if (head == "d" || head == "display") {
+        return UciCommand{UciCmdDisplay{}};
+    }
     return std::nullopt;
 }
 
 void UciLoop::run(Engine& engine, std::istream& in, std::ostream& out) {
     std::string line;
+    Position current_position;
     while (std::getline(in, line)) {
         const auto parsed = parse_command(line);
         if (!parsed.has_value()) {
@@ -208,11 +264,22 @@ void UciLoop::run(Engine& engine, std::istream& in, std::ostream& out) {
             out.flush();
         } else if (std::holds_alternative<UciCmdUciNewGame>(cmd)) {
             engine.set_position(std::string(kStartingFen));
+            current_position = Position{std::string_view(kStartingFen)};
         } else if (const auto* pos = std::get_if<UciCmdPosition>(&cmd)) {
             engine.set_position(pos->fen);
+            auto parsed_pos = Position::from_fen(pos->fen);
+            if (parsed_pos.has_value()) {
+                current_position = *parsed_pos;
+                for (const auto& uci : pos->moves) {
+                    current_position.make_move(uci);
+                }
+            }
         } else if (const auto* go = std::get_if<UciCmdGo>(&cmd)) {
             const auto move = engine.best_move(time_budget_for(*go));
             out << "bestmove " << format_move(move) << "\n";
+            out.flush();
+        } else if (std::holds_alternative<UciCmdDisplay>(cmd)) {
+            out << render_position(current_position);
             out.flush();
         } else if (std::holds_alternative<UciCmdQuit>(cmd)) {
             return;
