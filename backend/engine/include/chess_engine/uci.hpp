@@ -15,6 +15,7 @@ struct UciCmdUci {};
 struct UciCmdIsReady {};
 struct UciCmdUciNewGame {};
 struct UciCmdQuit {};
+struct UciCmdDisplay {};
 
 struct UciCmdPosition {
     std::string fen;
@@ -38,7 +39,8 @@ using UciCommand = std::variant<
     UciCmdUciNewGame,
     UciCmdPosition,
     UciCmdGo,
-    UciCmdQuit>;
+    UciCmdQuit,
+    UciCmdDisplay>;
 
 std::optional<UciCommand> parse_command(std::string_view line);
 

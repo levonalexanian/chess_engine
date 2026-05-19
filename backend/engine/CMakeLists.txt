@@ -3,6 +3,7 @@ add_library(chess_engine STATIC
     src/move.cpp
     src/position.cpp
     src/uci.cpp
+    src/zobrist.cpp
 )
 
 target_include_directories(chess_engine

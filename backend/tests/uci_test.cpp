@@ -141,6 +141,16 @@ TEST(UciParser, ParsesQuit) {
     EXPECT_TRUE(std::holds_alternative<chess_engine::UciCmdQuit>(*cmd));
 }
 
+TEST(UciParser, ParsesDShortAndLong) {
+    auto d_cmd = chess_engine::parse_command("d");
+    ASSERT_TRUE(d_cmd.has_value());
+    EXPECT_TRUE(std::holds_alternative<chess_engine::UciCmdDisplay>(*d_cmd));
+
+    auto display_cmd = chess_engine::parse_command("display");
+    ASSERT_TRUE(display_cmd.has_value());
+    EXPECT_TRUE(std::holds_alternative<chess_engine::UciCmdDisplay>(*display_cmd));
+}
+
 TEST(UciParser, IgnoresUnknownCommands) {
     EXPECT_FALSE(chess_engine::parse_command("setoption name Hash value 16").has_value());
     EXPECT_FALSE(chess_engine::parse_command("debug on").has_value());
@@ -199,4 +209,53 @@ TEST(UciLoopIntegration, IgnoresUnknownLines) {
     std::ostringstream out;
     chess_engine::UciLoop::run(engine, in, out);
     EXPECT_EQ(out.str(), "readyok\n");
+}
+
+TEST(UciLoopIntegration, DisplayRendersStartingPosition) {
+    RecordingEngine engine;
+    std::istringstream in(
+        "position startpos\n"
+        "d\n"
+        "quit\n");
+    std::ostringstream out;
+    chess_engine::UciLoop::run(engine, in, out);
+    const std::string output = out.str();
+    EXPECT_NE(output.find("r n b q k b n r"), std::string::npos);
+    EXPECT_NE(output.find("P P P P P P P P"), std::string::npos);
+    EXPECT_NE(output.find("a b c d e f g h"), std::string::npos);
+    EXPECT_NE(output.find("Side to move: white"), std::string::npos);
+    EXPECT_NE(output.find("Castling: KQkq"), std::string::npos);
+    EXPECT_NE(output.find("En passant: -"), std::string::npos);
+    EXPECT_NE(output.find("Halfmove clock: 0"), std::string::npos);
+    EXPECT_NE(output.find("Fullmove number: 1"), std::string::npos);
+    EXPECT_NE(output.find("Zobrist hash: 0x"), std::string::npos);
+}
+
+TEST(UciLoopIntegration, DisplayReflectsAppliedMoves) {
+    RecordingEngine engine;
+    std::istringstream in(
+        "position startpos moves e2e4 e7e5\n"
+        "d\n"
+        "quit\n");
+    std::ostringstream out;
+    chess_engine::UciLoop::run(engine, in, out);
+    const std::string output = out.str();
+    // After 1. e4 e5, e2 and e7 are empty (replaced with dots), and e4/e5 hold pawns.
+    EXPECT_NE(output.find("p p p p . p p p"), std::string::npos);  // black pawn row (rank 7)
+    EXPECT_NE(output.find("P P P P . P P P"), std::string::npos);  // white pawn row (rank 2)
+    EXPECT_NE(output.find("Side to move: white"), std::string::npos);
+    EXPECT_NE(output.find("Fullmove number: 2"), std::string::npos);
+}
+
+TEST(UciLoopIntegration, DisplayReflectsFenPosition) {
+    RecordingEngine engine;
+    std::istringstream in(
+        "position fen 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1\n"
+        "d\n"
+        "quit\n");
+    std::ostringstream out;
+    chess_engine::UciLoop::run(engine, in, out);
+    const std::string output = out.str();
+    EXPECT_NE(output.find("Castling: -"), std::string::npos);
+    EXPECT_NE(output.find("K P . . . . . r"), std::string::npos);  // rank 5
 }
