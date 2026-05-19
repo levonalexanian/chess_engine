@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chess_training"
+version = "0.0.1"
+description = "Training pipeline for the chess_engine project: PGN ingestion, encoding, transformer models, self-play, and ONNX export."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "chess_engine contributors" }]
+dependencies = [
+    "torch>=2.2,<3",
+    "python-chess>=1.999",
+    "numpy>=1.26",
+    "tqdm>=4.66",
+    "pydantic>=2.6",
+    "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+chess-train = "chess_training.scripts.train:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["chess_training*"]
+exclude = ["tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

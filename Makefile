@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 DEV     := $(COMPOSE) run --rm -T dev
 DEV_TTY := $(COMPOSE) run --rm --service-ports dev
 
-TRAIN_ARGS := $(filter-out $@,$(MAKECMDGOALS))
+TRAIN_ARGS := $(filter-out train,$(MAKECMDGOALS))
 
 .PHONY: help image-build install build typecheck test web train sh down clean
 
@@ -18,7 +18,7 @@ help:
 	@echo "  make typecheck    tsc --noEmit on the frontend"
 	@echo "  make test         ctest + vitest + pytest training/"
 	@echo "  make web          Build the frontend and serve chess-server on :8080"
-	@echo "  make train        Run training/scripts/train.py (pass args after --)"
+	@echo "  make train        Run chess_training.scripts.train (pass args after --)"
 	@echo "  make sh           Interactive shell in the dev container"
 	@echo ""
 	@echo "Teardown:"
@@ -29,7 +29,7 @@ image-build:
 	$(COMPOSE) build dev
 
 install:
-	$(DEV) bash -c 'set -e; conan profile detect --force >/dev/null; conan install backend --output-folder=backend/build/dev --build=missing -s build_type=Release; if [ -f frontend/package.json ]; then (cd frontend && npm install); fi; if [ -f training/pyproject.toml ]; then pip install --user -e training; fi'
+	$(DEV) bash -c 'set -e; conan profile detect --force >/dev/null; conan install backend --output-folder=backend/build/dev --build=missing -s build_type=Release; if [ -f frontend/package.json ]; then (cd frontend && npm install); fi; if [ -f training/pyproject.toml ]; then pip install --user --break-system-packages -e "training[dev]"; fi'
 
 build:
 	$(DEV) bash -c 'cmake --preset dev -S backend && cmake --build backend/build/dev'
@@ -44,7 +44,7 @@ web:
 	$(DEV_TTY) bash -c 'if [ -f frontend/package.json ]; then (cd frontend && npm run build); else echo "frontend not present yet; serving stub page"; fi; ./backend/build/dev/bin/chess-server'
 
 train:
-	$(DEV) bash -c 'python training/scripts/train.py $(TRAIN_ARGS)'
+	$(DEV) bash -c 'python -m chess_training.scripts.train $(TRAIN_ARGS)'
 
 sh:
 	$(DEV_TTY) bash

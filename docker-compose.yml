@@ -9,6 +9,7 @@ services:
       - .:/home/vscode/workspace
       - conan2-cache:/home/vscode/.conan2
       - frontend-node-modules:/home/vscode/workspace/frontend/node_modules
+      - python-user-local:/home/vscode/.local
     environment:
       - CHESS_ENGINE_REPO_ROOT=/home/vscode/workspace
     ports:
@@ -19,3 +20,4 @@ services:
 volumes:
   conan2-cache:
   frontend-node-modules:
+  python-user-local:
