@@ -4,8 +4,10 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "chess_engine/board.hpp"
+#include "chess_engine/move.hpp"
 
 namespace chess_engine {
 
@@ -52,6 +54,13 @@ public:
     // through a known-legal move list. Returns false only when the UCI string
     // is malformed or names an empty source square.
     bool make_move(std::string_view uci);
+
+    // Generate every pseudo-legal move for the side to move. Pseudo-legal
+    // means: produced by the standard movement rules of each piece (including
+    // captures, double pushes, promotions, en passant, and castling), but the
+    // moving side may still be left in check. Use generate_legal_moves to get
+    // the filtered list.
+    std::vector<Move> generate_pseudo_legal_moves() const;
 
     std::string to_fen() const;
     std::string fen() const;
