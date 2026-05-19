@@ -2,6 +2,8 @@ find_package(Crow CONFIG REQUIRED)
 
 add_library(chess_server_lib STATIC
     src/app.cpp
+    src/game_session.cpp
+    src/registry.cpp
 )
 
 target_include_directories(chess_server_lib

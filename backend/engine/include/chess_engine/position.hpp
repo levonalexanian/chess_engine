@@ -20,6 +20,7 @@ public:
     int halfmove_clock() const;
     int fullmove_number() const;
     std::string to_fen() const;
+    std::string fen() const;
 
 private:
     Board board_;

@@ -3,13 +3,19 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <unordered_map>
+#include <utility>
 
+#include <crow/json.h>
 #include <spdlog/spdlog.h>
+
+#include "chess_server/game_session.hpp"
+#include "chess_server/registry.hpp"
 
 namespace chess_server {
 
@@ -23,7 +29,7 @@ constexpr std::string_view kFrontendMissingPage =
     "<h1>chess-server</h1>\n"
     "<p>Frontend bundle not built yet. Run <code>make web</code> after the\n"
     "frontend lands (initial commit 9).</p>\n"
-    "<p>WebSocket echo endpoint: <code>/ws</code></p>\n"
+    "<p>WebSocket JSON endpoint: <code>/ws</code></p>\n"
     "<p>Health check: <code>/healthz</code></p>\n"
     "</body></html>\n";
 
@@ -105,14 +111,20 @@ std::string env_or(char const* name, std::string fallback) {
 
 }  // namespace
 
-App::App(AppOptions options)
-    : options_(std::move(options)), app_(std::make_unique<crow::SimpleApp>()) {
+App::App(AppOptions options) : App(std::move(options), EngineRegistry::with_defaults()) {}
+
+App::App(AppOptions options, EngineRegistry registry)
+    : options_(std::move(options)),
+      registry_(std::move(registry)),
+      app_(std::make_unique<crow::SimpleApp>()) {
     register_routes();
 }
 
 crow::SimpleApp& App::crow_app() { return *app_; }
 
 AppOptions const& App::options() const { return options_; }
+
+EngineRegistry const& App::registry() const { return registry_; }
 
 AppOptions App::options_from_env() {
     AppOptions options;
@@ -139,6 +151,35 @@ AppOptions App::options_from_env() {
     return options;
 }
 
+std::vector<OutboundMessage> App::dispatch_message(GameSession& session,
+                                                   std::string_view payload) {
+    auto parsed = crow::json::load(payload.data(), payload.size());
+    if (!parsed) {
+        return {make_error_message("bad json")};
+    }
+    if (!parsed.has("type") || parsed["type"].t() != crow::json::type::String) {
+        return {make_error_message("missing type")};
+    }
+
+    std::string const type = parsed["type"].s();
+    if (type == "new_game") {
+        if (!parsed.has("engine") || parsed["engine"].t() != crow::json::type::String) {
+            return {make_error_message("missing engine")};
+        }
+        return session.on_new_game(std::string(parsed["engine"].s()));
+    }
+    if (type == "user_move") {
+        if (!parsed.has("uci") || parsed["uci"].t() != crow::json::type::String) {
+            return {make_error_message("missing uci")};
+        }
+        return session.on_user_move(std::string(parsed["uci"].s()));
+    }
+    if (type == "request_engine_move") {
+        return session.on_request_engine_move();
+    }
+    return {make_error_message("unknown message type: " + type)};
+}
+
 void App::register_routes() {
     auto& app = *app_;
 
@@ -150,17 +191,41 @@ void App::register_routes() {
     });
 
     CROW_WEBSOCKET_ROUTE(app, "/ws")
-        .onopen([](crow::websocket::connection& conn) {
+        .onopen([this](crow::websocket::connection& conn) {
             spdlog::info("ws open from {}", conn.get_remote_ip());
+            std::lock_guard<std::mutex> lock(sessions_mutex_);
+            sessions_.emplace(std::piecewise_construct,
+                              std::forward_as_tuple(&conn),
+                              std::forward_as_tuple(registry_));
         })
-        .onclose([](crow::websocket::connection& conn, std::string const& reason) {
+        .onclose([this](crow::websocket::connection& conn, std::string const& reason) {
             spdlog::info("ws close from {} (reason={})", conn.get_remote_ip(), reason);
+            std::lock_guard<std::mutex> lock(sessions_mutex_);
+            sessions_.erase(&conn);
         })
-        .onmessage([](crow::websocket::connection& conn, std::string const& data, bool is_binary) {
+        .onmessage([this](crow::websocket::connection& conn, std::string const& data,
+                          bool is_binary) {
             if (is_binary) {
-                conn.send_binary(data);
-            } else {
-                conn.send_text(data);
+                auto const error = serialize_outbound(make_error_message("binary not supported"));
+                conn.send_text(error);
+                return;
+            }
+
+            std::vector<OutboundMessage> outbox;
+            {
+                std::lock_guard<std::mutex> lock(sessions_mutex_);
+                auto it = sessions_.find(&conn);
+                if (it == sessions_.end()) {
+                    auto [inserted, _] = sessions_.emplace(
+                        std::piecewise_construct,
+                        std::forward_as_tuple(&conn),
+                        std::forward_as_tuple(registry_));
+                    it = inserted;
+                }
+                outbox = dispatch_message(it->second, data);
+            }
+            for (auto const& msg : outbox) {
+                conn.send_text(serialize_outbound(msg));
             }
         });
 

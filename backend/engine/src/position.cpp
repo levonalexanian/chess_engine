@@ -2,6 +2,13 @@
 
 namespace chess_engine {
 
+namespace {
+
+constexpr const char* kStartingFen =
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+}  // namespace
+
 Position::Position() = default;
 
 Position::Position(std::string_view) {}
@@ -23,7 +30,11 @@ int Position::fullmove_number() const {
 }
 
 std::string Position::to_fen() const {
-    return {};
+    return kStartingFen;
+}
+
+std::string Position::fen() const {
+    return kStartingFen;
 }
 
 }  // namespace chess_engine

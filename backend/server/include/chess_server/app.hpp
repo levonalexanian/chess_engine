@@ -2,9 +2,16 @@
 
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <string_view>
+#include <unordered_map>
+#include <vector>
 
 #include <crow.h>
+
+#include "chess_server/game_session.hpp"
+#include "chess_server/registry.hpp"
 
 namespace chess_server {
 
@@ -17,18 +24,27 @@ struct AppOptions {
 class App {
 public:
     explicit App(AppOptions options);
+    App(AppOptions options, EngineRegistry registry);
 
     crow::SimpleApp& crow_app();
 
     AppOptions const& options() const;
+    EngineRegistry const& registry() const;
 
     static AppOptions options_from_env();
+
+    static std::vector<OutboundMessage> dispatch_message(GameSession& session,
+                                                         std::string_view payload);
 
 private:
     void register_routes();
 
     AppOptions options_;
+    EngineRegistry registry_;
     std::unique_ptr<crow::SimpleApp> app_;
+
+    std::mutex sessions_mutex_;
+    std::unordered_map<crow::websocket::connection*, GameSession> sessions_;
 };
 
 }  // namespace chess_server

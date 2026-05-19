@@ -40,3 +40,14 @@ target_link_libraries(server_tests
 )
 
 gtest_discover_tests(server_tests)
+
+add_executable(game_session_tests game_session_test.cpp)
+target_link_libraries(game_session_tests
+    PRIVATE
+        chess_server_lib
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(game_session_tests)
