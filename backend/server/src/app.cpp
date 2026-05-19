@@ -248,7 +248,22 @@ void App::register_routes() {
         if (!std::filesystem::exists(static_root, ec) || ec) {
             return crow::response(crow::status::NOT_FOUND, "not found");
         }
-        return serve_static_file(static_root, path);
+        if (!path_is_safe(path)) {
+            return crow::response(crow::status::BAD_REQUEST, "invalid path");
+        }
+        std::filesystem::path target = static_root / std::filesystem::path(path);
+        if (std::filesystem::exists(target, ec) && !ec) {
+            return serve_static_file(static_root, path);
+        }
+        auto const extension = std::filesystem::path(path).extension().string();
+        bool looks_like_asset = !extension.empty() && extension != ".html";
+        if (looks_like_asset) {
+            return crow::response(crow::status::NOT_FOUND, "not found");
+        }
+        if (std::filesystem::exists(static_root / "index.html", ec) && !ec) {
+            return serve_static_file(static_root, "index.html");
+        }
+        return crow::response(crow::status::NOT_FOUND, "not found");
     });
 }
 
