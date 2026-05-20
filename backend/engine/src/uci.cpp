@@ -23,7 +23,6 @@ namespace {
 constexpr std::string_view kStartingFen =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-constexpr std::string_view kEngineName = "chess_engine placeholder";
 constexpr std::string_view kEngineAuthor = "chess_engine authors";
 
 std::vector<std::string_view> tokenize(std::string_view line) {
@@ -255,7 +254,7 @@ void UciLoop::run(Engine& engine, std::istream& in, std::ostream& out) {
         }
         const auto& cmd = *parsed;
         if (std::holds_alternative<UciCmdUci>(cmd)) {
-            out << "id name " << kEngineName << "\n";
+            out << "id name chess_engine " << engine.name() << "\n";
             out << "id author " << kEngineAuthor << "\n";
             out << "uciok\n";
             out.flush();
@@ -266,7 +265,6 @@ void UciLoop::run(Engine& engine, std::istream& in, std::ostream& out) {
             engine.set_position(std::string(kStartingFen));
             current_position = Position{std::string_view(kStartingFen)};
         } else if (const auto* pos = std::get_if<UciCmdPosition>(&cmd)) {
-            engine.set_position(pos->fen);
             auto parsed_pos = Position::from_fen(pos->fen);
             if (parsed_pos.has_value()) {
                 current_position = *parsed_pos;
@@ -274,6 +272,7 @@ void UciLoop::run(Engine& engine, std::istream& in, std::ostream& out) {
                     current_position.make_move(uci);
                 }
             }
+            engine.set_position(current_position.fen());
         } else if (const auto* go = std::get_if<UciCmdGo>(&cmd)) {
             const auto move = engine.best_move(time_budget_for(*go));
             out << "bestmove " << format_move(move) << "\n";

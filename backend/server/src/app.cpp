@@ -163,10 +163,17 @@ std::vector<OutboundMessage> App::dispatch_message(GameSession& session,
 
     std::string const type = parsed["type"].s();
     if (type == "new_game") {
-        if (!parsed.has("engine") || parsed["engine"].t() != crow::json::type::String) {
-            return {make_error_message("missing engine")};
+        std::string engine_name(default_engine_name());
+        if (parsed.has("engine")) {
+            if (parsed["engine"].t() != crow::json::type::String) {
+                return {make_error_message("missing engine")};
+            }
+            std::string requested(parsed["engine"].s());
+            if (!requested.empty()) {
+                engine_name = std::move(requested);
+            }
         }
-        return session.on_new_game(std::string(parsed["engine"].s()));
+        return session.on_new_game(engine_name);
     }
     if (type == "user_move") {
         if (!parsed.has("uci") || parsed["uci"].t() != crow::json::type::String) {

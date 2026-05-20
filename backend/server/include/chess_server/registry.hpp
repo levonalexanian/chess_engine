@@ -11,6 +11,8 @@
 
 namespace chess_server {
 
+std::string_view default_engine_name();
+
 class EngineRegistry {
 public:
     using Factory = std::function<std::unique_ptr<chess_engine::Engine>()>;

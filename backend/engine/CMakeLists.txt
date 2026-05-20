@@ -6,6 +6,7 @@ add_library(chess_engine STATIC
     src/position.cpp
     src/uci.cpp
     src/zobrist.cpp
+    src/engines/random_mover.cpp
 )
 
 target_include_directories(chess_engine
@@ -14,6 +15,11 @@ target_include_directories(chess_engine
 )
 
 target_compile_features(chess_engine PUBLIC cxx_std_20)
+
+target_link_libraries(chess_engine
+    PUBLIC
+        spdlog::spdlog
+)
 
 add_executable(engine-cli cli/main.cpp)
 target_link_libraries(engine-cli
