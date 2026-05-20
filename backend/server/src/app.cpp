@@ -173,7 +173,29 @@ std::vector<OutboundMessage> App::dispatch_message(GameSession& session,
                 engine_name = std::move(requested);
             }
         }
-        return session.on_new_game(engine_name);
+        std::optional<std::string> starting_fen;
+        if (parsed.has("starting_fen")) {
+            if (parsed["starting_fen"].t() != crow::json::type::String) {
+                return {make_error_message("starting_fen must be a string")};
+            }
+            std::string value(parsed["starting_fen"].s());
+            if (!value.empty()) {
+                starting_fen = std::move(value);
+            }
+        }
+        std::vector<std::string> move_history;
+        if (parsed.has("moves")) {
+            if (parsed["moves"].t() != crow::json::type::List) {
+                return {make_error_message("moves must be an array")};
+            }
+            for (auto const& entry : parsed["moves"]) {
+                if (entry.t() != crow::json::type::String) {
+                    return {make_error_message("moves entries must be strings")};
+                }
+                move_history.emplace_back(entry.s());
+            }
+        }
+        return session.on_new_game(engine_name, std::move(starting_fen), move_history);
     }
     if (type == "user_move") {
         if (!parsed.has("uci") || parsed["uci"].t() != crow::json::type::String) {

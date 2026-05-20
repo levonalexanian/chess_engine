@@ -37,6 +37,9 @@ public:
     explicit GameSession(EngineRegistry const& registry);
 
     std::vector<OutboundMessage> on_new_game(std::string_view engine_name);
+    std::vector<OutboundMessage> on_new_game(std::string_view engine_name,
+                                             std::optional<std::string> starting_fen,
+                                             std::vector<std::string> const& moves);
     std::vector<OutboundMessage> on_user_move(std::string_view uci);
     std::vector<OutboundMessage> on_request_engine_move();
 
