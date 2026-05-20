@@ -4,8 +4,10 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "chess_engine/board.hpp"
+#include "chess_engine/move.hpp"
 
 namespace chess_engine {
 
@@ -22,6 +24,20 @@ struct CastlingRights {
     void clear(std::uint8_t bit) { mask &= static_cast<std::uint8_t>(~bit); }
 
     friend bool operator==(CastlingRights a, CastlingRights b) { return a.mask == b.mask; }
+};
+
+// Stack of mutable state needed to reverse a Move applied to a Position.
+// Returned by `Position::make_move(Move)` and consumed by `unmake_move`.
+struct UndoInfo {
+    Move move{};
+    std::optional<Piece> captured{};
+    int captured_square{-1};
+    CastlingRights prior_castling{};
+    std::optional<int> prior_ep_square{};
+    int prior_halfmove{0};
+    int prior_fullmove{0};
+    std::uint64_t prior_zobrist{0};
+    Color prior_side{Color::White};
 };
 
 class Position {
@@ -48,10 +64,35 @@ public:
     std::uint64_t compute_zobrist_hash() const;
 
     // Apply a UCI move to the position. Does not validate legality (move
-    // generation lives on the next branch); use it for now to advance state
-    // through a known-legal move list. Returns false only when the UCI string
-    // is malformed or names an empty source square.
+    // generation lives elsewhere); use it for known-legal move lists.
+    // Returns false only when the UCI string is malformed or names an empty
+    // source square. Delegates to make_move(Move) after inferring move flags
+    // from the current board state.
     bool make_move(std::string_view uci);
+
+    // Apply a Move object directly. The Move's flag set determines the
+    // semantics (castling / promotion / en passant). Returns an UndoInfo
+    // sufficient to fully reverse the move via unmake_move.
+    UndoInfo make_move(Move move);
+
+    // Reverse a previously-applied move using its UndoInfo. The Position must
+    // be in the state produced immediately after the matching make_move call.
+    void unmake_move(const UndoInfo& info);
+
+    // Generate every pseudo-legal move for the side to move. Pseudo-legal
+    // means: produced by the standard movement rules of each piece (including
+    // captures, double pushes, promotions, en passant, and castling), but the
+    // moving side may still be left in check. Use generate_legal_moves to get
+    // the filtered list.
+    std::vector<Move> generate_pseudo_legal_moves() const;
+
+    // Generate every legal move for the side to move: pseudo-legal filtered
+    // so the moving side's king is not left in check after the move.
+    std::vector<Move> generate_legal_moves() const;
+
+    // True iff `square` is attacked by any piece of `attacker` color in the
+    // current position. Used by the castling generator and the legality filter.
+    bool is_square_attacked(int square, Color attacker) const;
 
     std::string to_fen() const;
     std::string fen() const;

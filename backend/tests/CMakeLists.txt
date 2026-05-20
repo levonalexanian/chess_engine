@@ -71,6 +71,46 @@ target_link_libraries(make_move_tests
 
 gtest_discover_tests(make_move_tests)
 
+add_executable(attacks_tests attacks_test.cpp)
+target_link_libraries(attacks_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(attacks_tests)
+
+add_executable(move_gen_tests move_gen_test.cpp)
+target_link_libraries(move_gen_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(move_gen_tests)
+
+add_executable(unmake_tests unmake_test.cpp)
+target_link_libraries(unmake_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(unmake_tests)
+
+add_executable(legal_moves_tests legal_moves_test.cpp)
+target_link_libraries(legal_moves_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(legal_moves_tests)
+
 add_executable(uci_tests uci_test.cpp)
 target_link_libraries(uci_tests
     PRIVATE
@@ -101,3 +141,13 @@ target_link_libraries(game_session_tests
 )
 
 gtest_discover_tests(game_session_tests)
+
+add_executable(perft_tests perft_test.cpp)
+target_link_libraries(perft_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(perft_tests)

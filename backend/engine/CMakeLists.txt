@@ -1,6 +1,8 @@
 add_library(chess_engine STATIC
     src/board.cpp
     src/move.cpp
+    src/move_gen.cpp
+    src/perft.cpp
     src/position.cpp
     src/uci.cpp
     src/zobrist.cpp
@@ -19,3 +21,5 @@ target_link_libraries(engine-cli
         chess_engine
         fmt::fmt
 )
+
+add_subdirectory(bench)
