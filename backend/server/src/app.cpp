@@ -19,9 +19,7 @@
 
 namespace chess_server {
 
-namespace {
-
-constexpr std::string_view kFrontendMissingPage =
+static constexpr std::string_view kFrontendMissingPage =
     "<!doctype html>\n"
     "<html lang=\"en\">\n"
     "<head><meta charset=\"utf-8\"><title>chess-server</title></head>\n"
@@ -33,7 +31,7 @@ constexpr std::string_view kFrontendMissingPage =
     "<p>Health check: <code>/healthz</code></p>\n"
     "</body></html>\n";
 
-std::string content_type_for(std::filesystem::path const& path) {
+static std::string content_type_for(std::filesystem::path const& path) {
     static const std::unordered_map<std::string, std::string> kTypes = {
         {".html", "text/html; charset=utf-8"},
         {".htm", "text/html; charset=utf-8"},
@@ -60,7 +58,7 @@ std::string content_type_for(std::filesystem::path const& path) {
     return it->second;
 }
 
-bool path_is_safe(std::string_view path) {
+static bool path_is_safe(std::string_view path) {
     if (path.find("..") != std::string_view::npos) {
         return false;
     }
@@ -70,8 +68,8 @@ bool path_is_safe(std::string_view path) {
     return true;
 }
 
-crow::response serve_static_file(std::filesystem::path const& root,
-                                 std::string_view relative_path) {
+static crow::response serve_static_file(std::filesystem::path const& root,
+                                        std::string_view relative_path) {
     if (!path_is_safe(relative_path)) {
         return crow::response(crow::status::BAD_REQUEST, "invalid path");
     }
@@ -101,15 +99,13 @@ crow::response serve_static_file(std::filesystem::path const& root,
     return response;
 }
 
-std::string env_or(char const* name, std::string fallback) {
+static std::string env_or(char const* name, std::string fallback) {
     char const* value = std::getenv(name);
     if (value == nullptr || *value == '\0') {
         return fallback;
     }
     return std::string(value);
 }
-
-}  // namespace
 
 App::App(AppOptions options) : App(std::move(options), EngineRegistry::with_defaults()) {}
 

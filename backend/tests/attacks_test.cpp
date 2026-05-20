@@ -9,21 +9,17 @@
 namespace ce = chess_engine;
 namespace ca = chess_engine::attacks;
 
-namespace {
-
-int square_of(const char* algebraic) {
+static int square_of(const char* algebraic) {
     return (algebraic[1] - '1') * 8 + (algebraic[0] - 'a');
 }
 
-ce::Bitboard bits(std::initializer_list<const char*> squares) {
+static ce::Bitboard bits(std::initializer_list<const char*> squares) {
     ce::Bitboard b = 0;
     for (auto s : squares) {
         b |= ce::Bitboard{1} << square_of(s);
     }
     return b;
 }
-
-}  // namespace
 
 TEST(KnightAttacks, CenterSquareHasEightTargets) {
     const auto attacks = ca::knight_attacks(square_of("d4"));

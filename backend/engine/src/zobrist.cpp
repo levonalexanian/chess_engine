@@ -4,9 +4,7 @@
 
 namespace chess_engine::zobrist {
 
-namespace {
-
-Table build_table() {
+static Table build_table() {
     Table t{};
     std::mt19937_64 prng(kSeed);
     for (int piece = 0; piece < kNumPieces; ++piece) {
@@ -23,8 +21,6 @@ Table build_table() {
     t.black_to_move = prng();
     return t;
 }
-
-}  // namespace
 
 const Table& table() {
     static const Table kTable = build_table();

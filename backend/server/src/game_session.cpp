@@ -14,9 +14,7 @@
 
 namespace chess_server {
 
-namespace {
-
-std::string format_move(chess_engine::Move const& move) {
+static std::string format_move(chess_engine::Move const& move) {
     if (move.raw() == 0) {
         return "0000";
     }
@@ -36,8 +34,6 @@ std::string format_move(chess_engine::Move const& move) {
     }
     return uci_str;
 }
-
-}  // namespace
 
 OutboundMessage make_state_message(std::string fen) {
     OutboundMessage msg;

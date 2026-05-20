@@ -15,9 +15,7 @@
 
 #include "chess_server/app.h"
 
-namespace {
-
-std::uint16_t pick_free_port() {
+static std::uint16_t pick_free_port() {
     int sock = ::socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         throw std::runtime_error("socket() failed");
@@ -44,7 +42,7 @@ std::uint16_t pick_free_port() {
     return port;
 }
 
-std::string http_get(std::string const& host, std::uint16_t port, std::string const& path) {
+static std::string http_get(std::string const& host, std::uint16_t port, std::string const& path) {
     int sock = ::socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         throw std::runtime_error("socket() failed");
@@ -86,6 +84,8 @@ std::string http_get(std::string const& host, std::uint16_t port, std::string co
     return response;
 }
 
+namespace detail {
+
 struct RunningApp {
     chess_server::App app;
     std::future<void> run_future;
@@ -103,7 +103,7 @@ struct RunningApp {
     }
 };
 
-}  // namespace
+}  // namespace detail
 
 TEST(ServerSkeleton, HealthzReturnsOkJson) {
     chess_server::AppOptions options;
@@ -111,7 +111,7 @@ TEST(ServerSkeleton, HealthzReturnsOkJson) {
     options.port = pick_free_port();
     options.static_root = "/nonexistent/frontend/dist";
 
-    RunningApp runner(options);
+    detail::RunningApp runner(options);
 
     std::string response = http_get("127.0.0.1", options.port, "/healthz");
 
@@ -132,7 +132,7 @@ TEST(ServerSkeleton, RootServesStubWhenFrontendMissing) {
     options.port = pick_free_port();
     options.static_root = "/nonexistent/frontend/dist";
 
-    RunningApp runner(options);
+    detail::RunningApp runner(options);
 
     std::string response = http_get("127.0.0.1", options.port, "/");
     EXPECT_NE(response.find("HTTP/1.1 200"), std::string::npos)
@@ -146,7 +146,7 @@ TEST(ServerSkeleton, RejectsPathTraversal) {
     options.port = pick_free_port();
     options.static_root = "/tmp";
 
-    RunningApp runner(options);
+    detail::RunningApp runner(options);
 
     std::string response = http_get("127.0.0.1", options.port, "/..%2Fetc%2Fpasswd");
     EXPECT_TRUE(response.find("HTTP/1.1 400") != std::string::npos ||

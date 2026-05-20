@@ -10,12 +10,10 @@
 #include "chess_engine/move.h"
 #include "chess_engine/position.h"
 
-namespace {
+static constexpr std::chrono::milliseconds kBudget{5};
+static constexpr int kMaxFullmoves = 300;
 
-constexpr std::chrono::milliseconds kBudget{5};
-constexpr int kMaxFullmoves = 300;
-
-int king_square(chess_engine::Position const& pos, chess_engine::Color color) {
+static int king_square(chess_engine::Position const& pos, chess_engine::Color color) {
     auto const& board = pos.board();
     auto const king_piece = chess_engine::make_piece(color, chess_engine::PieceType::King);
     auto const bb = board.pieces(king_piece);
@@ -27,7 +25,7 @@ int king_square(chess_engine::Position const& pos, chess_engine::Color color) {
     return -1;
 }
 
-bool side_to_move_in_check(chess_engine::Position const& pos) {
+static bool side_to_move_in_check(chess_engine::Position const& pos) {
     auto const stm = pos.side_to_move();
     auto const attacker = stm == chess_engine::Color::White
                               ? chess_engine::Color::Black
@@ -39,7 +37,7 @@ bool side_to_move_in_check(chess_engine::Position const& pos) {
     return pos.is_square_attacked(king_sq, attacker);
 }
 
-void play_single_game(std::uint64_t white_seed, std::uint64_t black_seed) {
+static void play_single_game(std::uint64_t white_seed, std::uint64_t black_seed) {
     chess_engine::Position position;
     chess_engine::RandomMoverEngine white(white_seed);
     chess_engine::RandomMoverEngine black(black_seed);
@@ -87,8 +85,6 @@ void play_single_game(std::uint64_t white_seed, std::uint64_t black_seed) {
                   << position.fullmove_number();
     }
 }
-
-}  // namespace
 
 TEST(RandomVsRandom, GameTerminatesOrExceedsBound) {
     play_single_game(1, 2);

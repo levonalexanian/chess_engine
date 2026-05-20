@@ -9,12 +9,8 @@
 #include "chess_server/game_session.h"
 #include "chess_server/registry.h"
 
-namespace {
-
-constexpr char const* kStartingFen =
+static constexpr char const* kStartingFen =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-}  // namespace
 
 TEST(EngineRegistry, DefaultsRegisterPlaceholderAndRandom) {
     auto registry = chess_server::EngineRegistry::with_defaults();

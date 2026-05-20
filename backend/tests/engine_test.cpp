@@ -10,7 +10,7 @@
 #include "chess_engine/move.h"
 #include "chess_engine/position.h"
 
-namespace {
+namespace detail {
 
 class PlaceholderEngine : public chess_engine::Engine {
 public:
@@ -19,7 +19,7 @@ public:
     std::string name() const override { return "placeholder"; }
 };
 
-}  // namespace
+}  // namespace detail
 
 TEST(EngineSkeleton, ConstructsBoardAndPosition) {
     chess_engine::Board board;
@@ -36,7 +36,7 @@ TEST(EngineSkeleton, MoveDefaultsToZero) {
 }
 
 TEST(EngineSkeleton, EngineInterfaceIsAbstractAndImplementable) {
-    std::unique_ptr<chess_engine::Engine> engine = std::make_unique<PlaceholderEngine>();
+    std::unique_ptr<chess_engine::Engine> engine = std::make_unique<detail::PlaceholderEngine>();
     EXPECT_EQ(engine->name(), "placeholder");
     engine->set_position("startpos");
     auto move = engine->best_move(std::chrono::milliseconds{1});

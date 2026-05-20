@@ -18,14 +18,12 @@
 
 namespace chess_engine {
 
-namespace {
-
-constexpr std::string_view kStartingFen =
+static constexpr std::string_view kStartingFen =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-constexpr std::string_view kEngineAuthor = "chess_engine authors";
+static constexpr std::string_view kEngineAuthor = "chess_engine authors";
 
-std::vector<std::string_view> tokenize(std::string_view line) {
+static std::vector<std::string_view> tokenize(std::string_view line) {
     std::vector<std::string_view> tokens;
     std::size_t i = 0;
     while (i < line.size()) {
@@ -43,7 +41,7 @@ std::vector<std::string_view> tokenize(std::string_view line) {
     return tokens;
 }
 
-std::optional<int> parse_int(std::string_view token) {
+static std::optional<int> parse_int(std::string_view token) {
     int value = 0;
     const auto* first = token.data();
     const auto* last = token.data() + token.size();
@@ -54,7 +52,7 @@ std::optional<int> parse_int(std::string_view token) {
     return value;
 }
 
-std::optional<UciCommand> parse_position(const std::vector<std::string_view>& tokens) {
+static std::optional<UciCommand> parse_position(const std::vector<std::string_view>& tokens) {
     if (tokens.size() < 2) {
         return std::nullopt;
     }
@@ -91,7 +89,7 @@ std::optional<UciCommand> parse_position(const std::vector<std::string_view>& to
     return cmd;
 }
 
-std::optional<UciCommand> parse_go(const std::vector<std::string_view>& tokens) {
+static std::optional<UciCommand> parse_go(const std::vector<std::string_view>& tokens) {
     UciCmdGo cmd;
     std::size_t cursor = 1;
     while (cursor < tokens.size()) {
@@ -131,7 +129,7 @@ std::optional<UciCommand> parse_go(const std::vector<std::string_view>& tokens) 
     return cmd;
 }
 
-std::string format_move(const Move& move) {
+static std::string format_move(const Move& move) {
     if (move.raw() == 0) {
         return "0000";
     }
@@ -152,19 +150,19 @@ std::string format_move(const Move& move) {
     return uci_str;
 }
 
-std::chrono::milliseconds time_budget_for(const UciCmdGo& go) {
+static std::chrono::milliseconds time_budget_for(const UciCmdGo& go) {
     if (go.movetime.has_value()) {
         return std::chrono::milliseconds{*go.movetime};
     }
     return std::chrono::milliseconds{1000};
 }
 
-char render_piece(Piece p) {
+static char render_piece(Piece p) {
     static constexpr char kChars[] = "PNBRQKpnbrqk";
     return kChars[p];
 }
 
-std::string render_position(const Position& pos) {
+static std::string render_position(const Position& pos) {
     std::ostringstream out;
     for (int rank = 7; rank >= 0; --rank) {
         out << (rank + 1) << ' ';
@@ -207,8 +205,6 @@ std::string render_position(const Position& pos) {
         << pos.zobrist_hash() << std::dec << '\n';
     return out.str();
 }
-
-}  // namespace
 
 std::string starting_fen() {
     return std::string(kStartingFen);
