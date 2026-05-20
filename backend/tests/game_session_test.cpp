@@ -274,6 +274,117 @@ TEST(AppDispatch, NewGameWithEmptyEngineFieldUsesDefault) {
     EXPECT_EQ(session.engine()->name(), std::string(chess_server::default_engine_name()));
 }
 
+TEST(GameSession, NewGameWithStartingFenInitializesPosition) {
+    auto registry = chess_server::EngineRegistry::with_defaults();
+    chess_server::GameSession session(registry);
+    std::string const after_e4 =
+        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+
+    auto out = session.on_new_game("placeholder", after_e4, {});
+
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].type, "state");
+    EXPECT_EQ(out[0].fen, after_e4);
+    EXPECT_EQ(session.current_fen(), after_e4);
+    EXPECT_EQ(session.state(), chess_server::SessionState::InGame);
+}
+
+TEST(GameSession, NewGameWithMovesReplaysThem) {
+    auto registry = chess_server::EngineRegistry::with_defaults();
+    chess_server::GameSession session(registry);
+
+    auto out = session.on_new_game(
+        "placeholder", std::nullopt,
+        std::vector<std::string>{"e2e4", "e7e5", "g1f3", "b8c6", "f1c4"});
+
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].type, "state");
+    EXPECT_EQ(session.current_fen(),
+              "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3");
+    ASSERT_TRUE(session.last_user_move().has_value());
+    EXPECT_EQ(*session.last_user_move(), "f1c4");
+}
+
+TEST(GameSession, NewGameRejectsMalformedStartingFen) {
+    auto registry = chess_server::EngineRegistry::with_defaults();
+    chess_server::GameSession session(registry);
+
+    auto out = session.on_new_game("placeholder", std::string{"not a fen"}, {});
+
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].type, "error");
+    EXPECT_NE(out[0].message.find("starting_fen"), std::string::npos);
+    EXPECT_EQ(session.state(), chess_server::SessionState::Idle);
+}
+
+TEST(GameSession, NewGameRejectsIllegalMoveHistory) {
+    auto registry = chess_server::EngineRegistry::with_defaults();
+    chess_server::GameSession session(registry);
+
+    auto out = session.on_new_game(
+        "placeholder", std::nullopt,
+        std::vector<std::string>{"e2e4", "e2e4"});
+
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].type, "error");
+    EXPECT_NE(out[0].message.find("illegal"), std::string::npos);
+    EXPECT_EQ(session.state(), chess_server::SessionState::Idle);
+}
+
+TEST(GameSession, NewGameWithStartingFenAndMovesCombined) {
+    auto registry = chess_server::EngineRegistry::with_defaults();
+    chess_server::GameSession session(registry);
+    std::string const after_e4 =
+        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+
+    auto out = session.on_new_game(
+        "placeholder", after_e4,
+        std::vector<std::string>{"e7e5", "g1f3"});
+
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].type, "state");
+    EXPECT_EQ(session.current_fen(),
+              "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2");
+}
+
+TEST(AppDispatch, NewGameAcceptsStartingFenAndMovesViaJson) {
+    auto registry = chess_server::EngineRegistry::with_defaults();
+    chess_server::GameSession session(registry);
+
+    auto out = chess_server::App::dispatch_message(
+        session,
+        R"({"type":"new_game","engine":"placeholder","moves":["e2e4","e7e5"]})");
+
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].type, "state");
+    EXPECT_EQ(out[0].fen,
+              "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2");
+}
+
+TEST(AppDispatch, NewGameRejectsMovesArrayWithNonStringEntry) {
+    auto registry = chess_server::EngineRegistry::with_defaults();
+    chess_server::GameSession session(registry);
+
+    auto out = chess_server::App::dispatch_message(
+        session,
+        R"({"type":"new_game","engine":"placeholder","moves":["e2e4",42]})");
+
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].type, "error");
+}
+
+TEST(AppDispatch, NewGameRejectsStartingFenWrongType) {
+    auto registry = chess_server::EngineRegistry::with_defaults();
+    chess_server::GameSession session(registry);
+
+    auto out = chess_server::App::dispatch_message(
+        session,
+        R"({"type":"new_game","engine":"placeholder","starting_fen":42})");
+
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].type, "error");
+}
+
 TEST(AppDispatch, UserMoveWithoutUciFieldProducesError) {
     auto registry = chess_server::EngineRegistry::with_defaults();
     chess_server::GameSession session(registry);
