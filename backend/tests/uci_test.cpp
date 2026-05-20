@@ -6,9 +6,9 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/engine.hpp"
-#include "chess_engine/move.hpp"
-#include "chess_engine/uci.hpp"
+#include "chess_engine/engine.h"
+#include "chess_engine/move.h"
+#include "chess_engine/uci.h"
 
 namespace {
 

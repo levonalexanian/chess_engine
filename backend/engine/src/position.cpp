@@ -1,4 +1,4 @@
-#include "chess_engine/position.hpp"
+#include "chess_engine/position.h"
 
 #include <array>
 #include <cctype>
@@ -10,8 +10,8 @@
 #include <string_view>
 #include <vector>
 
-#include "chess_engine/move.hpp"
-#include "chess_engine/zobrist.hpp"
+#include "chess_engine/move.h"
+#include "chess_engine/zobrist.h"
 
 namespace chess_engine {
 

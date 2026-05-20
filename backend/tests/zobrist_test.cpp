@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/position.hpp"
-#include "chess_engine/zobrist.hpp"
+#include "chess_engine/position.h"
+#include "chess_engine/zobrist.h"
 
 namespace ce = chess_engine;
 

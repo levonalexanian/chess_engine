@@ -1,4 +1,4 @@
-#include "chess_engine/move.hpp"
+#include "chess_engine/move.h"
 
 #include <cctype>
 #include <cstdint>

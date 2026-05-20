@@ -1,9 +1,9 @@
-#include "chess_engine/perft.hpp"
+#include "chess_engine/perft.h"
 
 #include <cstdint>
 
-#include "chess_engine/move.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/move.h"
+#include "chess_engine/position.h"
 
 namespace chess_engine {
 

@@ -1,13 +1,13 @@
-#include "chess_server/registry.hpp"
+#include "chess_server/registry.h"
 
 #include <chrono>
 #include <string>
 #include <string_view>
 #include <utility>
 
-#include "chess_engine/engine.hpp"
-#include "chess_engine/engines/random_mover.hpp"
-#include "chess_engine/move.hpp"
+#include "chess_engine/engine.h"
+#include "chess_engine/engines/random_mover.h"
+#include "chess_engine/move.h"
 
 namespace chess_server {
 

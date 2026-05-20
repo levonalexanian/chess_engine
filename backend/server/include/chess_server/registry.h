@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "chess_engine/engine.hpp"
+#include "chess_engine/engine.h"
 
 namespace chess_server {
 

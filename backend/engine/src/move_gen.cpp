@@ -3,10 +3,10 @@
 #include <cstdint>
 #include <vector>
 
-#include "chess_engine/attacks.hpp"
-#include "chess_engine/board.hpp"
-#include "chess_engine/move.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/attacks.h"
+#include "chess_engine/board.h"
+#include "chess_engine/move.h"
+#include "chess_engine/position.h"
 
 namespace chess_engine {
 

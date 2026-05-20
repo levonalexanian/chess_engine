@@ -13,7 +13,7 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_server/app.hpp"
+#include "chess_server/app.h"
 
 namespace {
 

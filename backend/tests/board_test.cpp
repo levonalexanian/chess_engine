@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/board.hpp"
+#include "chess_engine/board.h"
 
 namespace ce = chess_engine;
 

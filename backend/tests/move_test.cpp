@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/move.hpp"
+#include "chess_engine/move.h"
 
 namespace ce = chess_engine;
 

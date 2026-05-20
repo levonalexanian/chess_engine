@@ -4,7 +4,7 @@
 #include <array>
 #include <cstdint>
 
-#include "chess_engine/board.hpp"
+#include "chess_engine/board.h"
 
 namespace chess_engine::zobrist {
 

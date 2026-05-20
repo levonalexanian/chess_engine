@@ -1,4 +1,4 @@
-#include "chess_engine/zobrist.hpp"
+#include "chess_engine/zobrist.h"
 
 #include <random>
 

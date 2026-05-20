@@ -7,8 +7,8 @@
 #include <string_view>
 #include <vector>
 
-#include "chess_engine/board.hpp"
-#include "chess_engine/move.hpp"
+#include "chess_engine/board.h"
+#include "chess_engine/move.h"
 
 namespace chess_engine {
 

@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/board.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/board.h"
+#include "chess_engine/position.h"
 
 namespace ce = chess_engine;
 

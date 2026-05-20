@@ -8,9 +8,9 @@
 #include <string_view>
 #include <vector>
 
-#include "chess_engine/engine.hpp"
-#include "chess_engine/position.hpp"
-#include "chess_server/registry.hpp"
+#include "chess_engine/engine.h"
+#include "chess_engine/position.h"
+#include "chess_server/registry.h"
 
 namespace chess_server {
 

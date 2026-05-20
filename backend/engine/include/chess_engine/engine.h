@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-#include "chess_engine/move.hpp"
+#include "chess_engine/move.h"
 
 namespace chess_engine {
 

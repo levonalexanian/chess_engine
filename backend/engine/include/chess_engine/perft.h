@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include "chess_engine/position.hpp"
+#include "chess_engine/position.h"
 
 namespace chess_engine {
 

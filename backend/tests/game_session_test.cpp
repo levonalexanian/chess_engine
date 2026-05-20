@@ -5,9 +5,9 @@
 #include <crow/json.h>
 #include <gtest/gtest.h>
 
-#include "chess_server/app.hpp"
-#include "chess_server/game_session.hpp"
-#include "chess_server/registry.hpp"
+#include "chess_server/app.h"
+#include "chess_server/game_session.h"
+#include "chess_server/registry.h"
 
 namespace {
 
