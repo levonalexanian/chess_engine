@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import type { Square } from "chess.js";
+import GameOverBanner from "./components/GameOverBanner";
+import NewGameDialog, {
+  type NewGameChoice,
+} from "./components/NewGameDialog";
 import Play from "./pages/Play";
 import { useWs } from "./ws/hooks";
 import { findKingSquare, START_FEN } from "./game/chess";
@@ -11,6 +15,7 @@ export default function App() {
   const url = (import.meta.env.VITE_WS_URL as string | undefined) ?? DEFAULT_WS_URL;
   const ws = useWs(url);
   const startedRef = useRef(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (ws.state.connection === "connected" && !startedRef.current) {
@@ -40,10 +45,29 @@ export default function App() {
 
   const game = ws.state.game;
 
+  const handleStart = useCallback(
+    (choice: NewGameChoice) => {
+      setDialogOpen(false);
+      ws.startNewGame({
+        engine: choice.engine,
+        humanColor: choice.humanColor,
+        startingFen: choice.startingFen,
+      });
+    },
+    [ws]
+  );
+
   return (
     <div className="min-h-screen flex flex-col items-stretch py-6 px-4 bg-slate-50 text-slate-900">
       <header className="w-full max-w-5xl mx-auto flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold tracking-tight">Chess Engine</h1>
+        <button
+          type="button"
+          onClick={() => setDialogOpen(true)}
+          className="text-sm bg-slate-800 hover:bg-slate-700 text-white font-medium px-3 py-1.5 rounded-md"
+        >
+          New game
+        </button>
       </header>
       <main className="flex-1 w-full">
         <Play
@@ -61,6 +85,18 @@ export default function App() {
           onPieceDrop={(from, to) => ws.attemptUserMove(from, to)}
         />
       </main>
+      {game?.gameOver !== undefined && (
+        <GameOverBanner
+          gameOver={game.gameOver}
+          onNewGame={() => setDialogOpen(true)}
+        />
+      )}
+      <NewGameDialog
+        open={dialogOpen}
+        defaultEngine={game?.engine ?? "random"}
+        onCancel={() => setDialogOpen(false)}
+        onStart={handleStart}
+      />
     </div>
   );
 }
