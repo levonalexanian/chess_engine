@@ -161,3 +161,13 @@ target_link_libraries(random_mover_tests
 )
 
 gtest_discover_tests(random_mover_tests)
+
+add_executable(random_vs_random_tests random_vs_random_test.cpp)
+target_link_libraries(random_vs_random_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(random_vs_random_tests)
