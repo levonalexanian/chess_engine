@@ -151,3 +151,13 @@ target_link_libraries(perft_tests
 )
 
 gtest_discover_tests(perft_tests)
+
+add_executable(random_mover_tests random_mover_test.cpp)
+target_link_libraries(random_mover_tests
+    PRIVATE
+        chess_engine
+        GTest::gtest
+        GTest::gtest_main
+)
+
+gtest_discover_tests(random_mover_tests)
