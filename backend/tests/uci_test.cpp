@@ -186,7 +186,10 @@ TEST(UciLoopIntegration, HandshakeAndBestMove) {
     EXPECT_NE(output.find("readyok"), std::string::npos);
     EXPECT_NE(output.find("bestmove 0000"), std::string::npos);
     EXPECT_GE(engine.set_position_calls, 2);
-    EXPECT_EQ(engine.last_fen, chess_engine::starting_fen());
+    // The engine sees the position after the move list is applied, not the
+    // base FEN, so it can pick a move based on the current state.
+    EXPECT_EQ(engine.last_fen,
+              "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
     EXPECT_EQ(engine.best_move_calls, 1);
     EXPECT_EQ(engine.last_budget, std::chrono::milliseconds{250});
 }

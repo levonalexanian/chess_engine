@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "chess_engine/engine.hpp"
+#include "chess_engine/engines/random_mover.hpp"
 #include "chess_engine/move.hpp"
 
 namespace chess_server {
@@ -26,6 +27,10 @@ public:
 };
 
 }  // namespace
+
+std::string_view default_engine_name() {
+    return "random";
+}
 
 EngineRegistry::EngineRegistry() = default;
 
@@ -58,6 +63,9 @@ EngineRegistry EngineRegistry::with_defaults() {
     EngineRegistry registry;
     registry.register_engine("placeholder", []() -> std::unique_ptr<chess_engine::Engine> {
         return std::make_unique<PlaceholderEngine>();
+    });
+    registry.register_engine("random", []() -> std::unique_ptr<chess_engine::Engine> {
+        return std::make_unique<chess_engine::RandomMoverEngine>();
     });
     return registry;
 }

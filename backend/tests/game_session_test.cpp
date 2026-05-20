@@ -16,16 +16,25 @@ constexpr char const* kStartingFen =
 
 }  // namespace
 
-TEST(EngineRegistry, DefaultsRegisterPlaceholder) {
+TEST(EngineRegistry, DefaultsRegisterPlaceholderAndRandom) {
     auto registry = chess_server::EngineRegistry::with_defaults();
     EXPECT_TRUE(registry.has("placeholder"));
+    EXPECT_TRUE(registry.has("random"));
     EXPECT_FALSE(registry.has("nonexistent"));
 
-    auto engine = registry.create("placeholder");
-    ASSERT_NE(engine, nullptr);
-    EXPECT_EQ(engine->name(), "placeholder");
+    auto placeholder = registry.create("placeholder");
+    ASSERT_NE(placeholder, nullptr);
+    EXPECT_EQ(placeholder->name(), "placeholder");
+
+    auto random = registry.create("random");
+    ASSERT_NE(random, nullptr);
+    EXPECT_EQ(random->name(), "random");
 
     EXPECT_EQ(registry.create("nonexistent"), nullptr);
+}
+
+TEST(EngineRegistry, DefaultEngineNameIsRandom) {
+    EXPECT_EQ(chess_server::default_engine_name(), "random");
 }
 
 TEST(GameSession, NewGameTransitionsToInGameAndEmitsState) {
@@ -189,14 +198,29 @@ TEST(AppDispatch, FullHappyPath) {
     EXPECT_EQ(engine_move_out[1].fen, kStartingFen);
 }
 
-TEST(AppDispatch, NewGameWithoutEngineFieldProducesError) {
+TEST(AppDispatch, NewGameWithoutEngineFieldUsesDefault) {
     auto registry = chess_server::EngineRegistry::with_defaults();
     chess_server::GameSession session(registry);
 
     auto out = chess_server::App::dispatch_message(session, R"({"type":"new_game"})");
 
     ASSERT_EQ(out.size(), 1u);
-    EXPECT_EQ(out[0].type, "error");
+    EXPECT_EQ(out[0].type, "state");
+    EXPECT_EQ(session.state(), chess_server::SessionState::InGame);
+    ASSERT_NE(session.engine(), nullptr);
+    EXPECT_EQ(session.engine()->name(), std::string(chess_server::default_engine_name()));
+}
+
+TEST(AppDispatch, NewGameWithEmptyEngineFieldUsesDefault) {
+    auto registry = chess_server::EngineRegistry::with_defaults();
+    chess_server::GameSession session(registry);
+
+    auto out = chess_server::App::dispatch_message(session, R"({"type":"new_game","engine":""})");
+
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].type, "state");
+    ASSERT_NE(session.engine(), nullptr);
+    EXPECT_EQ(session.engine()->name(), std::string(chess_server::default_engine_name()));
 }
 
 TEST(AppDispatch, UserMoveWithoutUciFieldProducesError) {
