@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_SERVER_GAME_SESSION_H
+#define CHESS_SERVER_GAME_SESSION_H
 
 #include <chrono>
 #include <memory>
@@ -57,3 +58,5 @@ private:
 };
 
 }  // namespace chess_server
+
+#endif  // CHESS_SERVER_GAME_SESSION_H

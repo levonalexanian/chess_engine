@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_ENGINE_ENGINE_H
+#define CHESS_ENGINE_ENGINE_H
 
 #include <chrono>
 #include <string>
@@ -21,3 +22,5 @@ public:
 };
 
 }  // namespace chess_engine
+
+#endif  // CHESS_ENGINE_ENGINE_H

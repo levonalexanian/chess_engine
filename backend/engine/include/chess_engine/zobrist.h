@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_ENGINE_ZOBRIST_H
+#define CHESS_ENGINE_ZOBRIST_H
 
 #include <array>
 #include <cstdint>
@@ -24,3 +25,5 @@ struct Table {
 const Table& table();
 
 }  // namespace chess_engine::zobrist
+
+#endif  // CHESS_ENGINE_ZOBRIST_H

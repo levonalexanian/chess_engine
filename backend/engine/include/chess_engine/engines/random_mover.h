@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_ENGINE_ENGINES_RANDOM_MOVER_H
+#define CHESS_ENGINE_ENGINES_RANDOM_MOVER_H
 
 #include <chrono>
 #include <cstdint>
@@ -27,3 +28,5 @@ private:
 };
 
 }  // namespace chess_engine
+
+#endif  // CHESS_ENGINE_ENGINES_RANDOM_MOVER_H

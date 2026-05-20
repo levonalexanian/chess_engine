@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_SERVER_REGISTRY_H
+#define CHESS_SERVER_REGISTRY_H
 
 #include <functional>
 #include <memory>
@@ -34,3 +35,5 @@ private:
 };
 
 }  // namespace chess_server
+
+#endif  // CHESS_SERVER_REGISTRY_H
