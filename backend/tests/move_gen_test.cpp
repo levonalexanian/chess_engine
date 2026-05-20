@@ -6,28 +6,24 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/move.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/move.h"
+#include "chess_engine/position.h"
 
 namespace ce = chess_engine;
 
-namespace {
-
-ce::Position pos_from(const char* fen) {
+static ce::Position pos_from(const char* fen) {
     auto p = ce::Position::from_fen(fen);
     [&]() { ASSERT_TRUE(p.has_value()) << fen; }();
     return *p;
 }
 
-std::unordered_set<std::string> uci_set(const std::vector<ce::Move>& moves) {
+static std::unordered_set<std::string> uci_set(const std::vector<ce::Move>& moves) {
     std::unordered_set<std::string> s;
     for (const auto& m : moves) {
         s.insert(m.to_uci());
     }
     return s;
 }
-
-}  // namespace
 
 TEST(PseudoLegal, StartingPositionHasTwentyMoves) {
     auto pos = pos_from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");

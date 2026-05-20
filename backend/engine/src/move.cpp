@@ -1,15 +1,13 @@
-#include "chess_engine/move.hpp"
+#include "chess_engine/move.h"
 
 #include <cctype>
 #include <cstdint>
 
 namespace chess_engine {
 
-namespace {
+static constexpr const char* kPromoChars = "nbrq";
 
-constexpr const char* kPromoChars = "nbrq";
-
-std::optional<int> parse_square(char file, char rank) {
+static std::optional<int> parse_square(char file, char rank) {
     if (file < 'a' || file > 'h') {
         return std::nullopt;
     }
@@ -20,8 +18,6 @@ std::optional<int> parse_square(char file, char rank) {
     const int r = rank - '1';
     return r * 8 + f;
 }
-
-}  // namespace
 
 Move::Move(std::uint8_t from_sq, std::uint8_t to_sq, Flag flag, Promo promo) {
     data_ = static_cast<std::uint16_t>(

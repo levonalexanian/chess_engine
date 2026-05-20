@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_ENGINE_MOVE_H
+#define CHESS_ENGINE_MOVE_H
 
 #include <cstdint>
 #include <optional>
@@ -53,3 +54,5 @@ private:
 };
 
 }  // namespace chess_engine
+
+#endif  // CHESS_ENGINE_MOVE_H

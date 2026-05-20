@@ -1,17 +1,17 @@
-#include "chess_server/registry.hpp"
+#include "chess_server/registry.h"
 
 #include <chrono>
 #include <string>
 #include <string_view>
 #include <utility>
 
-#include "chess_engine/engine.hpp"
-#include "chess_engine/engines/random_mover.hpp"
-#include "chess_engine/move.hpp"
+#include "chess_engine/engine.h"
+#include "chess_engine/engines/random_mover.h"
+#include "chess_engine/move.h"
 
 namespace chess_server {
 
-namespace {
+namespace detail {
 
 class PlaceholderEngine : public chess_engine::Engine {
 public:
@@ -26,7 +26,7 @@ public:
     }
 };
 
-}  // namespace
+}  // namespace detail
 
 std::string_view default_engine_name() {
     return "random";
@@ -62,7 +62,7 @@ std::vector<std::string> EngineRegistry::names() const {
 EngineRegistry EngineRegistry::with_defaults() {
     EngineRegistry registry;
     registry.register_engine("placeholder", []() -> std::unique_ptr<chess_engine::Engine> {
-        return std::make_unique<PlaceholderEngine>();
+        return std::make_unique<detail::PlaceholderEngine>();
     });
     registry.register_engine("random", []() -> std::unique_ptr<chess_engine::Engine> {
         return std::make_unique<chess_engine::RandomMoverEngine>();

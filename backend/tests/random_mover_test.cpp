@@ -8,18 +8,14 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/engines/random_mover.hpp"
-#include "chess_engine/move.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/engines/random_mover.h"
+#include "chess_engine/move.h"
+#include "chess_engine/position.h"
 
-namespace {
-
-constexpr char const* kStartingFen =
+static constexpr char const* kStartingFen =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-constexpr std::chrono::milliseconds kBudget{10};
-
-}  // namespace
+static constexpr std::chrono::milliseconds kBudget{10};
 
 TEST(RandomMoverEngine, NameIsRandom) {
     chess_engine::RandomMoverEngine engine(1);

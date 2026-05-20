@@ -1,4 +1,4 @@
-#include "chess_engine/engines/random_mover.hpp"
+#include "chess_engine/engines/random_mover.h"
 
 #include <chrono>
 #include <cstdint>
@@ -9,8 +9,8 @@
 
 #include <spdlog/spdlog.h>
 
-#include "chess_engine/move.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/move.h"
+#include "chess_engine/position.h"
 
 namespace chess_engine {
 

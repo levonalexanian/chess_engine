@@ -6,11 +6,11 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/engine.hpp"
-#include "chess_engine/move.hpp"
-#include "chess_engine/uci.hpp"
+#include "chess_engine/engine.h"
+#include "chess_engine/move.h"
+#include "chess_engine/uci.h"
 
-namespace {
+namespace detail {
 
 class RecordingEngine : public chess_engine::Engine {
 public:
@@ -31,7 +31,7 @@ public:
     int best_move_calls{0};
 };
 
-}  // namespace
+}  // namespace detail
 
 TEST(UciParser, ParsesUci) {
     auto cmd = chess_engine::parse_command("uci");
@@ -169,7 +169,7 @@ TEST(UciParser, ToleratesExtraWhitespace) {
 }
 
 TEST(UciLoopIntegration, HandshakeAndBestMove) {
-    RecordingEngine engine;
+    detail::RecordingEngine engine;
     std::istringstream in(
         "uci\n"
         "isready\n"
@@ -195,7 +195,7 @@ TEST(UciLoopIntegration, HandshakeAndBestMove) {
 }
 
 TEST(UciLoopIntegration, QuitStopsLoop) {
-    RecordingEngine engine;
+    detail::RecordingEngine engine;
     std::istringstream in("quit\nuci\n");
     std::ostringstream out;
     chess_engine::UciLoop::run(engine, in, out);
@@ -203,7 +203,7 @@ TEST(UciLoopIntegration, QuitStopsLoop) {
 }
 
 TEST(UciLoopIntegration, IgnoresUnknownLines) {
-    RecordingEngine engine;
+    detail::RecordingEngine engine;
     std::istringstream in(
         "debug on\n"
         "setoption name Hash value 16\n"
@@ -215,7 +215,7 @@ TEST(UciLoopIntegration, IgnoresUnknownLines) {
 }
 
 TEST(UciLoopIntegration, DisplayRendersStartingPosition) {
-    RecordingEngine engine;
+    detail::RecordingEngine engine;
     std::istringstream in(
         "position startpos\n"
         "d\n"
@@ -235,7 +235,7 @@ TEST(UciLoopIntegration, DisplayRendersStartingPosition) {
 }
 
 TEST(UciLoopIntegration, DisplayReflectsAppliedMoves) {
-    RecordingEngine engine;
+    detail::RecordingEngine engine;
     std::istringstream in(
         "position startpos moves e2e4 e7e5\n"
         "d\n"
@@ -251,7 +251,7 @@ TEST(UciLoopIntegration, DisplayReflectsAppliedMoves) {
 }
 
 TEST(UciLoopIntegration, DisplayReflectsFenPosition) {
-    RecordingEngine engine;
+    detail::RecordingEngine engine;
     std::istringstream in(
         "position fen 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1\n"
         "d\n"

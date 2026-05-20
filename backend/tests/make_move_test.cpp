@@ -4,31 +4,27 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/board.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/board.h"
+#include "chess_engine/position.h"
 
 namespace ce = chess_engine;
 
-namespace {
-
-constexpr const char* kStartingFen =
+static constexpr const char* kStartingFen =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-constexpr const char* kKiwipete =
+static constexpr const char* kKiwipete =
     "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 
-ce::Position position_from(const char* fen) {
+static ce::Position position_from(const char* fen) {
     auto p = ce::Position::from_fen(fen);
     [&]() { ASSERT_TRUE(p.has_value()) << fen; }();
     return *p;
 }
 
-void apply_sequence(ce::Position& p, std::vector<std::string> const& moves) {
+static void apply_sequence(ce::Position& p, std::vector<std::string> const& moves) {
     for (const auto& m : moves) {
         ASSERT_TRUE(p.make_move(m)) << m;
     }
 }
-
-}  // namespace
 
 TEST(MakeMove, SinglePawnPushAdvancesState) {
     auto pos = position_from(kStartingFen);

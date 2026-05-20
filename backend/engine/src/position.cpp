@@ -1,4 +1,4 @@
-#include "chess_engine/position.hpp"
+#include "chess_engine/position.h"
 
 #include <array>
 #include <cctype>
@@ -10,17 +10,15 @@
 #include <string_view>
 #include <vector>
 
-#include "chess_engine/move.hpp"
-#include "chess_engine/zobrist.hpp"
+#include "chess_engine/move.h"
+#include "chess_engine/zobrist.h"
 
 namespace chess_engine {
 
-namespace {
-
-constexpr std::string_view kStartingFen =
+static constexpr std::string_view kStartingFen =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-std::optional<Piece> piece_from_fen_char(char c) {
+static std::optional<Piece> piece_from_fen_char(char c) {
     switch (c) {
         case 'P': return Piece::WhitePawn;
         case 'N': return Piece::WhiteKnight;
@@ -38,12 +36,12 @@ std::optional<Piece> piece_from_fen_char(char c) {
     }
 }
 
-char fen_char_for(Piece p) {
+static char fen_char_for(Piece p) {
     static constexpr char kChars[] = "PNBRQKpnbrqk";
     return kChars[p];
 }
 
-std::vector<std::string_view> split_fields(std::string_view fen) {
+static std::vector<std::string_view> split_fields(std::string_view fen) {
     std::vector<std::string_view> fields;
     std::size_t i = 0;
     while (i < fen.size()) {
@@ -61,7 +59,7 @@ std::vector<std::string_view> split_fields(std::string_view fen) {
     return fields;
 }
 
-std::optional<int> parse_int_field(std::string_view field) {
+static std::optional<int> parse_int_field(std::string_view field) {
     int value = 0;
     const auto* first = field.data();
     const auto* last = field.data() + field.size();
@@ -72,7 +70,7 @@ std::optional<int> parse_int_field(std::string_view field) {
     return value;
 }
 
-std::optional<int> parse_en_passant(std::string_view field) {
+static std::optional<int> parse_en_passant(std::string_view field) {
     if (field == "-") {
         return std::optional<int>{std::nullopt};
     }
@@ -88,7 +86,7 @@ std::optional<int> parse_en_passant(std::string_view field) {
     return square;
 }
 
-std::optional<CastlingRights> parse_castling(std::string_view field) {
+static std::optional<CastlingRights> parse_castling(std::string_view field) {
     CastlingRights c;
     if (field == "-") {
         return c;
@@ -104,8 +102,6 @@ std::optional<CastlingRights> parse_castling(std::string_view field) {
     }
     return c;
 }
-
-}  // namespace
 
 Position::Position() {
     auto starting = Position::from_fen(kStartingFen);
@@ -220,13 +216,11 @@ std::optional<Position> Position::from_fen(std::string_view fen) {
     return pos;
 }
 
-namespace {
-
-constexpr int square_index(int file, int rank) {
+static constexpr int square_index(int file, int rank) {
     return rank * 8 + file;
 }
 
-std::uint8_t castling_loss_for_square(int square) {
+static std::uint8_t castling_loss_for_square(int square) {
     // Whenever a piece moves to or from a corner, that side loses the
     // corresponding castling right (rook moved off its starting square, or
     // captured on a corner).
@@ -238,8 +232,6 @@ std::uint8_t castling_loss_for_square(int square) {
         default: return 0;
     }
 }
-
-}  // namespace
 
 bool Position::make_move(std::string_view uci) {
     auto parsed = Move::from_uci(uci);

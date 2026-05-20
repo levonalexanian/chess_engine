@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_ENGINE_BOARD_H
+#define CHESS_ENGINE_BOARD_H
 
 #include <array>
 #include <cstdint>
@@ -81,3 +82,5 @@ private:
 };
 
 }  // namespace chess_engine
+
+#endif  // CHESS_ENGINE_BOARD_H

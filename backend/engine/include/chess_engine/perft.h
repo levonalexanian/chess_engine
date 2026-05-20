@@ -1,8 +1,9 @@
-#pragma once
+#ifndef CHESS_ENGINE_PERFT_H
+#define CHESS_ENGINE_PERFT_H
 
 #include <cstdint>
 
-#include "chess_engine/position.hpp"
+#include "chess_engine/position.h"
 
 namespace chess_engine {
 
@@ -12,3 +13,5 @@ namespace chess_engine {
 std::uint64_t perft(Position& pos, int depth);
 
 }  // namespace chess_engine
+
+#endif  // CHESS_ENGINE_PERFT_H

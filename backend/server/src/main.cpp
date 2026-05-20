@@ -4,7 +4,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "chess_server/app.hpp"
+#include "chess_server/app.h"
 
 int main() {
     spdlog::set_level(spdlog::level::info);

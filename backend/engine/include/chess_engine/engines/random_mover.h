@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_ENGINE_ENGINES_RANDOM_MOVER_H
+#define CHESS_ENGINE_ENGINES_RANDOM_MOVER_H
 
 #include <chrono>
 #include <cstdint>
@@ -6,9 +7,9 @@
 #include <string>
 #include <string_view>
 
-#include "chess_engine/engine.hpp"
-#include "chess_engine/move.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/engine.h"
+#include "chess_engine/move.h"
+#include "chess_engine/position.h"
 
 namespace chess_engine {
 
@@ -27,3 +28,5 @@ private:
 };
 
 }  // namespace chess_engine
+
+#endif  // CHESS_ENGINE_ENGINES_RANDOM_MOVER_H

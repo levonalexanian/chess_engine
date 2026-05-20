@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_SERVER_GAME_SESSION_H
+#define CHESS_SERVER_GAME_SESSION_H
 
 #include <chrono>
 #include <memory>
@@ -7,9 +8,9 @@
 #include <string_view>
 #include <vector>
 
-#include "chess_engine/engine.hpp"
-#include "chess_engine/position.hpp"
-#include "chess_server/registry.hpp"
+#include "chess_engine/engine.h"
+#include "chess_engine/position.h"
+#include "chess_server/registry.h"
 
 namespace chess_server {
 
@@ -57,3 +58,5 @@ private:
 };
 
 }  // namespace chess_server
+
+#endif  // CHESS_SERVER_GAME_SESSION_H

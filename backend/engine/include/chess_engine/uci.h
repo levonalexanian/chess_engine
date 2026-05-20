@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_ENGINE_UCI_H
+#define CHESS_ENGINE_UCI_H
 
 #include <iosfwd>
 #include <optional>
@@ -52,3 +53,5 @@ public:
 };
 
 }  // namespace chess_engine
+
+#endif  // CHESS_ENGINE_UCI_H

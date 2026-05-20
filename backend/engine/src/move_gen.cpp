@@ -3,27 +3,25 @@
 #include <cstdint>
 #include <vector>
 
-#include "chess_engine/attacks.hpp"
-#include "chess_engine/board.hpp"
-#include "chess_engine/move.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/attacks.h"
+#include "chess_engine/board.h"
+#include "chess_engine/move.h"
+#include "chess_engine/position.h"
 
 namespace chess_engine {
 
-namespace {
+static constexpr Bitboard kRank1 = Bitboard{0xFF};
+static constexpr Bitboard kRank2 = Bitboard{0xFF} << 8;
+static constexpr Bitboard kRank7 = Bitboard{0xFF} << 48;
+static constexpr Bitboard kRank8 = Bitboard{0xFF} << 56;
 
-constexpr Bitboard kRank1 = Bitboard{0xFF};
-constexpr Bitboard kRank2 = Bitboard{0xFF} << 8;
-constexpr Bitboard kRank7 = Bitboard{0xFF} << 48;
-constexpr Bitboard kRank8 = Bitboard{0xFF} << 56;
-
-int pop_lsb(Bitboard& b) {
+static int pop_lsb(Bitboard& b) {
     const int sq = std::countr_zero(b);
     b &= b - 1;
     return sq;
 }
 
-void emit_promotions(std::vector<Move>& moves, int from, int to) {
+static void emit_promotions(std::vector<Move>& moves, int from, int to) {
     moves.emplace_back(static_cast<std::uint8_t>(from), static_cast<std::uint8_t>(to),
                        Move::FlagPromotion, Move::PromoQueen);
     moves.emplace_back(static_cast<std::uint8_t>(from), static_cast<std::uint8_t>(to),
@@ -34,12 +32,12 @@ void emit_promotions(std::vector<Move>& moves, int from, int to) {
                        Move::FlagPromotion, Move::PromoKnight);
 }
 
-void emit_quiet_or_capture(std::vector<Move>& moves, int from, int to) {
+static void emit_quiet_or_capture(std::vector<Move>& moves, int from, int to) {
     moves.emplace_back(static_cast<std::uint8_t>(from), static_cast<std::uint8_t>(to));
 }
 
-void generate_pawn_moves(const Board& board, Color stm, std::optional<int> ep_square,
-                         std::vector<Move>& out) {
+static void generate_pawn_moves(const Board& board, Color stm, std::optional<int> ep_square,
+                                std::vector<Move>& out) {
     const Color opp_color = stm == Color::White ? Color::Black : Color::White;
     const Bitboard opp = board.occupancy(opp_color);
     const Bitboard all = board.occupancy();
@@ -174,7 +172,7 @@ void generate_pawn_moves(const Board& board, Color stm, std::optional<int> ep_sq
     }
 }
 
-void generate_piece_moves(const Board& board, Color stm, std::vector<Move>& out) {
+static void generate_piece_moves(const Board& board, Color stm, std::vector<Move>& out) {
     const Bitboard own = board.occupancy(stm);
     const Bitboard all = board.occupancy();
     const Bitboard target_mask = ~own;
@@ -235,11 +233,7 @@ void generate_piece_moves(const Board& board, Color stm, std::vector<Move>& out)
     }
 }
 
-}  // namespace
-
-namespace {
-
-bool square_attacked(const Board& board, int square, Color attacker) {
+static bool square_attacked(const Board& board, int square, Color attacker) {
     const Bitboard all = board.occupancy();
     // Pawn attackers: invert the pawn-attack table — a square is attacked by a
     // pawn of `attacker` iff the OTHER colour's pawn-attack map from `square`
@@ -268,7 +262,7 @@ bool square_attacked(const Board& board, int square, Color attacker) {
     return false;
 }
 
-void generate_castling(const Position& pos, std::vector<Move>& out) {
+static void generate_castling(const Position& pos, std::vector<Move>& out) {
     const Color stm = pos.side_to_move();
     const Color opp = stm == Color::White ? Color::Black : Color::White;
     const auto castling = pos.castling();
@@ -317,8 +311,6 @@ void generate_castling(const Position& pos, std::vector<Move>& out) {
         }
     }
 }
-
-}  // namespace
 
 bool Position::is_square_attacked(int square, Color attacker) const {
     return square_attacked(board_, square, attacker);

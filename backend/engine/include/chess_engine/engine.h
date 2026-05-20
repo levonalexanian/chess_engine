@@ -1,10 +1,11 @@
-#pragma once
+#ifndef CHESS_ENGINE_ENGINE_H
+#define CHESS_ENGINE_ENGINE_H
 
 #include <chrono>
 #include <string>
 #include <string_view>
 
-#include "chess_engine/move.hpp"
+#include "chess_engine/move.h"
 
 namespace chess_engine {
 
@@ -21,3 +22,5 @@ public:
 };
 
 }  // namespace chess_engine
+
+#endif  // CHESS_ENGINE_ENGINE_H

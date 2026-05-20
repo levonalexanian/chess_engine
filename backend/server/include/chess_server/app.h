@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHESS_SERVER_APP_H
+#define CHESS_SERVER_APP_H
 
 #include <filesystem>
 #include <memory>
@@ -10,8 +11,8 @@
 
 #include <crow.h>
 
-#include "chess_server/game_session.hpp"
-#include "chess_server/registry.hpp"
+#include "chess_server/game_session.h"
+#include "chess_server/registry.h"
 
 namespace chess_server {
 
@@ -48,3 +49,5 @@ private:
 };
 
 }  // namespace chess_server
+
+#endif  // CHESS_SERVER_APP_H

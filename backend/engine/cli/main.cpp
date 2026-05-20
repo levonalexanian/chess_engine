@@ -1,9 +1,9 @@
 #include <iostream>
 #include <memory>
 
-#include "chess_engine/engine.hpp"
-#include "chess_engine/engines/random_mover.hpp"
-#include "chess_engine/uci.hpp"
+#include "chess_engine/engine.h"
+#include "chess_engine/engines/random_mover.h"
+#include "chess_engine/uci.h"
 
 int main() {
     std::unique_ptr<chess_engine::Engine> engine = std::make_unique<chess_engine::RandomMoverEngine>();

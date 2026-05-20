@@ -1,9 +1,10 @@
-#pragma once
+#ifndef CHESS_ENGINE_ATTACKS_H
+#define CHESS_ENGINE_ATTACKS_H
 
 #include <array>
 #include <cstdint>
 
-#include "chess_engine/board.hpp"
+#include "chess_engine/board.h"
 
 namespace chess_engine::attacks {
 
@@ -123,3 +124,5 @@ constexpr Bitboard queen_attacks(int square, Bitboard occupancy) {
 }
 
 }  // namespace chess_engine::attacks
+
+#endif  // CHESS_ENGINE_ATTACKS_H

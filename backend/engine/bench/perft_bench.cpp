@@ -4,8 +4,8 @@
 
 #include <fmt/format.h>
 
-#include "chess_engine/perft.hpp"
-#include "chess_engine/position.hpp"
+#include "chess_engine/perft.h"
+#include "chess_engine/position.h"
 
 namespace ce = chess_engine;
 

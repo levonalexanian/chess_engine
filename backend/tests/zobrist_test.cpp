@@ -4,19 +4,15 @@
 
 #include <gtest/gtest.h>
 
-#include "chess_engine/position.hpp"
-#include "chess_engine/zobrist.hpp"
+#include "chess_engine/position.h"
+#include "chess_engine/zobrist.h"
 
 namespace ce = chess_engine;
 
-namespace {
-
-constexpr const char* kStartingFen =
+static constexpr const char* kStartingFen =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-constexpr const char* kKiwipete =
+static constexpr const char* kKiwipete =
     "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
-
-}  // namespace
 
 TEST(Zobrist, TableIsDeterministic) {
     const auto& a = ce::zobrist::table();
