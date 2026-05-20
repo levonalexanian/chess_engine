@@ -244,4 +244,35 @@ describe("reducer", () => {
     const cleared = reduce(withNotice, { kind: "clearNotice" });
     expect(cleared.notice).toBeNull();
   });
+
+  it("preserves game state across disconnect and reconnect for resync", () => {
+    const afterMove = apply(
+      initialState,
+      { kind: "wsOpen" },
+      {
+        kind: "startNewGame",
+        engine: "random",
+        startingFen: START_FEN,
+        humanColor: "white",
+      },
+      {
+        kind: "userMoveApplied",
+        uci: "e2e4",
+        san: "e4",
+        fen: AFTER_E4,
+        turn: "black",
+        inCheck: false,
+      }
+    );
+    const droppedAndBack = apply(
+      afterMove,
+      { kind: "wsClose" },
+      { kind: "wsReconnecting", attempt: 1 },
+      { kind: "wsReconnected" }
+    );
+    expect(droppedAndBack.game?.startingFen).toBe(START_FEN);
+    expect(droppedAndBack.game?.moves).toEqual(["e2e4"]);
+    expect(droppedAndBack.game?.fen).toBe(AFTER_E4);
+    expect(droppedAndBack.connection).toBe("connected");
+  });
 });

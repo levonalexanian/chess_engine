@@ -5,6 +5,7 @@ import GameOverBanner from "./components/GameOverBanner";
 import NewGameDialog, {
   type NewGameChoice,
 } from "./components/NewGameDialog";
+import Toast from "./components/Toast";
 import Play from "./pages/Play";
 import { useWs } from "./ws/hooks";
 import { findKingSquare, START_FEN } from "./game/chess";
@@ -97,6 +98,7 @@ export default function App() {
         onCancel={() => setDialogOpen(false)}
         onStart={handleStart}
       />
+      <Toast notice={ws.state.notice} onDismiss={ws.clearNotice} />
     </div>
   );
 }
